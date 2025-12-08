@@ -1,0 +1,357 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/README.md b/README.md
+index 31ebdf982ee4e916181bd39f10906a22da58b171..8b9140ee539aea001ece7a9867ec36b8cac0e175 100644
+--- a/README.md
++++ b/README.md
+@@ -1 +1,15 @@
+-# Coding_with_Ai_Pixi
+\ No newline at end of file
++# Pixi.js GitHub Pages Demo
++
++A minimal Pixi.js playground that runs entirely in the browser—perfect for hosting with GitHub Pages. It draws a starry background with a handful of glowing orbs you can nudge around by dragging on the canvas.
++
++## Running locally
++Just open `index.html` in your browser. No bundlers or servers are required.
++
++## Deploying to GitHub Pages
++1. Push this repository to GitHub.
++2. In your repository settings, enable **Pages** and point it at the `main` branch (root folder).
++3. After GitHub finishes building, your demo will be live at the provided Pages URL.
++
++## Customizing
++- Edit `main.js` to tweak the Pixi scene or add new sprites.
++- Update `styles.css` or the markup in `index.html` to change the layout and copy.
+diff --git a/index.html b/index.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c9527f509b6791b7c76131da615b5ee64c3eb088
+--- /dev/null
++++ b/index.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <title>Pixi.js Starter</title>
++    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
++    <link rel="stylesheet" href="./styles.css" />
++  </head>
++  <body>
++    <main>
++      <section class="hero">
++        <div class="hero__content">
++          <p class="eyebrow">Pixi.js + GitHub Pages</p>
++          <h1>Welcome to a tiny canvas playground</h1>
++          <p class="lede">
++            This demo keeps everything client-side so it can be hosted on GitHub
++            Pages without any build step. Edit <code>index.html</code> and
++            <code>main.js</code> to keep experimenting.
++          </p>
++          <div class="cta-row">
++            <a class="cta" href="https://pixijs.com/" target="_blank" rel="noreferrer">
++              Pixi.js docs
++            </a>
++            <a class="cta ghost" href="https://github.com" target="_blank" rel="noreferrer">
++              View on GitHub
++            </a>
++          </div>
++        </div>
++        <div class="hero__canvas" id="canvas-wrapper"></div>
++      </section>
++    </main>
++
++    <script type="module" src="./main.js"></script>
++  </body>
++</html>
+diff --git a/main.js b/main.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..915f0d384a3122565468b2021096814b934c17ee
+--- /dev/null
++++ b/main.js
+@@ -0,0 +1,141 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.min.mjs";
++
++const wrapper = document.getElementById("canvas-wrapper");
++
++const app = new PIXI.Application();
++await app.init({
++  background: "#0c1224",
++  resizeTo: wrapper,
++  antialias: true,
++});
++
++wrapper.appendChild(app.canvas);
++
++const starField = new PIXI.Graphics();
++starField.beginFill(0x0b1023, 0.95);
++starField.drawRect(0, 0, app.screen.width, app.screen.height);
++starField.endFill();
++app.stage.addChild(starField);
++
++const stars = [];
++for (let i = 0; i < 60; i++) {
++  const star = new PIXI.Graphics();
++  const radius = Math.random() * 2 + 1;
++  star.beginFill(0xffffff, Math.random() * 0.7 + 0.3);
++  star.drawCircle(0, 0, radius);
++  star.endFill();
++  star.x = Math.random() * app.screen.width;
++  star.y = Math.random() * app.screen.height;
++  star.alpha = Math.random();
++  app.stage.addChild(star);
++  stars.push({ view: star, speed: 0.4 + Math.random() * 1.2 });
++}
++
++const orbs = new PIXI.Container();
++app.stage.addChild(orbs);
++
++function createOrb(color, x, y, direction) {
++  const orb = new PIXI.Graphics();
++  orb.beginFill(color, 0.9);
++  orb.lineStyle({ color: 0xffffff, width: 2, alpha: 0.1 });
++  orb.drawCircle(0, 0, 30);
++  orb.endFill();
++  orb.x = x;
++  orb.y = y;
++  orb.direction = direction;
++  orb.speed = 1 + Math.random() * 1.4;
++  orb.rotationSpeed = (Math.random() - 0.5) * 0.02;
++  orb.pivot.set(0.5);
++  orbs.addChild(orb);
++  return orb;
++}
++
++const palette = [0x7df0c4, 0x8be9fd, 0xd6b3ff, 0xffd166];
++const orbSprites = palette.map((color, index) =>
++  createOrb(color, 100 + index * 80, 120 + index * 30, index % 2 === 0 ? 1 : -1)
++);
++
++const labelStyle = new PIXI.TextStyle({
++  fill: 0xffffff,
++  fontSize: 18,
++  fontWeight: "700",
++  dropShadow: true,
++  dropShadowAlpha: 0.35,
++  dropShadowBlur: 4,
++  dropShadowAngle: Math.PI / 3,
++  dropShadowDistance: 4,
++});
++
++const label = new PIXI.Text({
++  text: "Drag to stir the orbs",
++  style: labelStyle,
++});
++label.anchor.set(0.5);
++label.position.set(app.screen.width / 2, app.screen.height - 40);
++app.stage.addChild(label);
++
++const cursor = new PIXI.Graphics();
++cursor.beginFill(0xffffff);
++cursor.drawCircle(0, 0, 6);
++cursor.endFill();
++cursor.alpha = 0;
++app.stage.addChild(cursor);
++
++let pointerPos = { x: app.screen.width / 2, y: app.screen.height / 2 };
++let pointerActive = false;
++
++app.stage.eventMode = "static";
++app.stage.hitArea = app.screen;
++app.stage.cursor = "grab";
++
++app.stage
++  .on("pointerdown", (event) => {
++    pointerActive = true;
++    pointerPos = event.global.clone();
++    cursor.alpha = 1;
++    app.stage.cursor = "grabbing";
++  })
++  .on("pointerup", () => {
++    pointerActive = false;
++    cursor.alpha = 0;
++    app.stage.cursor = "grab";
++  })
++  .on("pointerupoutside", () => {
++    pointerActive = false;
++    cursor.alpha = 0;
++    app.stage.cursor = "grab";
++  })
++  .on("pointermove", (event) => {
++    pointerPos = event.global.clone();
++    cursor.position.copyFrom(pointerPos);
++  });
++
++app.ticker.add((delta) => {
++  stars.forEach((star) => {
++    star.view.y += star.speed * delta;
++    star.view.alpha = 0.4 + Math.abs(Math.sin(app.ticker.lastTime * 0.0015 + star.view.x)) * 0.5;
++    if (star.view.y > app.screen.height) {
++      star.view.y = -2;
++      star.view.x = Math.random() * app.screen.width;
++    }
++  });
++
++  orbSprites.forEach((orb, index) => {
++    orb.x += orb.direction * orb.speed * delta + (pointerActive ? (pointerPos.x - orb.x) * 0.002 : 0);
++    orb.y += Math.cos(app.ticker.lastTime * 0.0015 + index) * 0.8 * delta + (pointerActive ? (pointerPos.y - orb.y) * 0.002 : 0);
++    orb.rotation += orb.rotationSpeed * delta;
++
++    orb.x = (orb.x + app.screen.width) % app.screen.width;
++    orb.y = (orb.y + app.screen.height) % app.screen.height;
++  });
++
++  label.position.set(app.screen.width / 2, app.screen.height - 40);
++});
++
++app.renderer.on("resize", () => {
++  starField.clear();
++  starField.beginFill(0x0b1023, 0.95);
++  starField.drawRect(0, 0, app.screen.width, app.screen.height);
++  starField.endFill();
++  label.position.set(app.screen.width / 2, app.screen.height - 40);
++});
+diff --git a/styles.css b/styles.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d7be0fbdc28be208c80f5831aa4fbaada61483f
+--- /dev/null
++++ b/styles.css
+@@ -0,0 +1,136 @@
++:root {
++  color-scheme: light;
++  --bg: radial-gradient(circle at 20% 20%, #1f2f5d, #0b1226 40%);
++  --panel: rgba(255, 255, 255, 0.08);
++  --text: #e9edf5;
++  --muted: #b8c1d9;
++  --accent: #8be9fd;
++  --ghost: rgba(255, 255, 255, 0.15);
++  --shadow: 0 15px 60px rgba(0, 0, 0, 0.3);
++}
++
++* {
++  box-sizing: border-box;
++}
++
++body {
++  margin: 0;
++  min-height: 100vh;
++  font-family: "Inter", system-ui, -apple-system, sans-serif;
++  background: var(--bg);
++  color: var(--text);
++}
++
++main {
++  display: grid;
++  place-items: center;
++  padding: 48px 24px 64px;
++}
++
++.hero {
++  display: grid;
++  gap: 28px;
++  max-width: 1000px;
++  width: min(100%, 1100px);
++  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
++  align-items: center;
++}
++
++.hero__content {
++  background: var(--panel);
++  padding: 28px;
++  border-radius: 18px;
++  box-shadow: var(--shadow);
++  border: 1px solid rgba(255, 255, 255, 0.08);
++}
++
++.hero__canvas {
++  background: var(--panel);
++  padding: 12px;
++  border-radius: 18px;
++  box-shadow: var(--shadow);
++  border: 1px solid rgba(255, 255, 255, 0.08);
++}
++
++h1 {
++  margin: 12px 0;
++  letter-spacing: -0.5px;
++  font-size: clamp(1.9rem, 3vw, 2.4rem);
++}
++
++p {
++  margin: 0;
++}
++
++.lede {
++  margin-top: 12px;
++  color: var(--muted);
++  line-height: 1.6;
++}
++
++.eyebrow {
++  text-transform: uppercase;
++  letter-spacing: 1.4px;
++  font-size: 0.85rem;
++  color: var(--accent);
++  font-weight: 700;
++}
++
++.cta-row {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++  margin-top: 20px;
++}
++
++.cta {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  padding: 12px 18px;
++  border-radius: 12px;
++  text-decoration: none;
++  color: #0b1226;
++  background: linear-gradient(135deg, #8be9fd, #7df0c4);
++  font-weight: 700;
++  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
++  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
++}
++
++.cta:hover {
++  transform: translateY(-2px);
++  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
++}
++
++.cta.ghost {
++  background: var(--ghost);
++  color: var(--text);
++  border: 1px solid rgba(255, 255, 255, 0.15);
++}
++
++code {
++  background: rgba(0, 0, 0, 0.3);
++  padding: 3px 6px;
++  border-radius: 6px;
++  font-size: 0.9em;
++}
++
++canvas {
++  display: block;
++  width: min(600px, 70vw);
++  max-width: 100%;
++  height: auto;
++  border-radius: 12px;
++  border: 1px solid rgba(255, 255, 255, 0.07);
++}
++
++@media (max-width: 700px) {
++  main {
++    padding: 32px 18px 48px;
++  }
++
++  .hero__content,
++  .hero__canvas {
++    padding: 20px;
++  }
++}
+ 
+EOF
+)
