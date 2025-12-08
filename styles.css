@@ -1,0 +1,136 @@
+:root {
+  color-scheme: light;
+  --bg: radial-gradient(circle at 20% 20%, #1f2f5d, #0b1226 40%);
+  --panel: rgba(255, 255, 255, 0.08);
+  --text: #e9edf5;
+  --muted: #b8c1d9;
+  --accent: #8be9fd;
+  --ghost: rgba(255, 255, 255, 0.15);
+  --shadow: 0 15px 60px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  display: grid;
+  place-items: center;
+  padding: 48px 24px 64px;
+}
+
+.hero {
+  display: grid;
+  gap: 28px;
+  max-width: 1000px;
+  width: min(100%, 1100px);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: center;
+}
+
+.hero__content {
+  background: var(--panel);
+  padding: 28px;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero__canvas {
+  background: var(--panel);
+  padding: 12px;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+h1 {
+  margin: 12px 0;
+  letter-spacing: -0.5px;
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+}
+
+p {
+  margin: 0;
+}
+
+.lede {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #0b1226;
+  background: linear-gradient(135deg, #8be9fd, #7df0c4);
+  font-weight: 700;
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+}
+
+.cta.ghost {
+  background: var(--ghost);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+canvas {
+  display: block;
+  width: min(600px, 70vw);
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 700px) {
+  main {
+    padding: 32px 18px 48px;
+  }
+
+  .hero__content,
+  .hero__canvas {
+    padding: 20px;
+  }
+}
