@@ -30,10 +30,10 @@ main {
 .hero {
   display: grid;
   gap: 28px;
-  max-width: 1000px;
-  width: min(100%, 1100px);
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  align-items: center;
+  max-width: 1200px;
+  width: min(100%, 1200px);
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  align-items: stretch;
 }
 
 .hero__content {
@@ -50,6 +50,9 @@ main {
   border-radius: 18px;
   box-shadow: var(--shadow);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  place-items: center;
+  min-height: 520px;
 }
 
 h1 {
@@ -76,38 +79,6 @@ p {
   font-weight: 700;
 }
 
-.cta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 18px;
-  border-radius: 12px;
-  text-decoration: none;
-  color: #0b1226;
-  background: linear-gradient(135deg, #8be9fd, #7df0c4);
-  font-weight: 700;
-  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-}
-
-.cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
-}
-
-.cta.ghost {
-  background: var(--ghost);
-  color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
 code {
   background: rgba(0, 0, 0, 0.3);
   padding: 3px 6px;
@@ -117,7 +88,7 @@ code {
 
 canvas {
   display: block;
-  width: min(600px, 70vw);
+  width: min(840px, 70vw);
   max-width: 100%;
   height: auto;
   border-radius: 12px;

@@ -1,357 +1,1010 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/README.md b/README.md
-index 31ebdf982ee4e916181bd39f10906a22da58b171..8b9140ee539aea001ece7a9867ec36b8cac0e175 100644
---- a/README.md
-+++ b/README.md
-@@ -1 +1,15 @@
--# Coding_with_Ai_Pixi
-\ No newline at end of file
-+# Pixi.js GitHub Pages Demo
+diff --git a/agents.md b/agents.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f2f7af7d1f9207abeee6c7cce65462ee28b8b18
+--- /dev/null
++++ b/agents.md
+@@ -0,0 +1,177 @@
++# agents.md
++## Warm & Cold — Single-Level PixiJS Game (iPad Target)
++This document defines the autonomous coding agents responsible for implementing the game using PixiJS 8.x. Each agent has one responsibility and clear inputs/outputs for AI-driven development.
 +
-+A minimal Pixi.js playground that runs entirely in the browser—perfect for hosting with GitHub Pages. It draws a starry background with a handful of glowing orbs you can nudge around by dragging on the canvas.
++---
 +
-+## Running locally
-+Just open `index.html` in your browser. No bundlers or servers are required.
++# 1. AppBootstrapAgent
++**Purpose:** Initialize a PixiJS 8.x Application and attach it to the DOM for iPad use.
 +
-+## Deploying to GitHub Pages
-+1. Push this repository to GitHub.
-+2. In your repository settings, enable **Pages** and point it at the `main` branch (root folder).
-+3. After GitHub finishes building, your demo will be live at the provided Pages URL.
++**Responsibilities:**
++- Create `Application({ resizeTo: window, resolution: devicePixelRatio })`.
++- Append `app.canvas` to the element `#game`.
++- Manage resize/orientation scaling.
++- Export the Application instance.
 +
-+## Customizing
-+- Edit `main.js` to tweak the Pixi scene or add new sprites.
-+- Update `styles.css` or the markup in `index.html` to change the layout and copy.
++**Outputs:** `Application` object.
++
++---
++
++# 2. AssetLoaderAgent
++**Purpose:** Load the game’s assets using PixiJS `Assets`.
++
++**Responsibilities:**
++- Load:  
++  - `background_main.png`  
++  - `hidden_object.png`  
++  - `ui_timer_bar.png`  
++  - `ui_restart.png`
++- Expose `Texture.from(alias)` access.
++
++**Outputs:** Preloaded textures.
++
++---
++
++# 3. SceneManagerAgent
++**Purpose:** Control creation, replacement, and restarting of the game’s single scene.
++
++**Responsibilities:**
++- Instantiate `MainScene`.
++- Add/remove it from `app.stage`.
++- Implement `restartGame()`.
++
++**Outputs:** Active scene container.
++
++---
++
++# 4. MainSceneAgent
++**Purpose:** Central controller of gameplay inside the single level.
++
++**Responsibilities:**
++- Add background sprite.
++- Place hidden object sprite.
++- Apply warm/cold color filter.
++- Initialize timer and UI.
++- Register pointer input callbacks.
++- Update scene each frame via `app.ticker`.
++- Handle success/fail state transitions.
++
++**Outputs:** Visual scene container and game state.
++
++---
++
++# 5. ObjectPlacementAgent
++**Purpose:** Determine random placement of the hidden object inside the environment.
++
++**Responsibilities:**
++- Calculate valid coordinate range inside background.
++- Return random `{ x, y }` ensuring object stays fully visible.
++
++**Outputs:** `{ x, y }` position.
++
++---
++
++# 6. InteractionAgent
++**Purpose:** Manage pointer/touch input for iPad via PixiJS event system.
++
++**Responsibilities:**
++- Enable `eventMode = "static"` and assign hit area.
++- Track pointer position in scene coordinates.
++- Detect taps on hidden object bounds.
++- Provide callback interface to MainScene.
++
++**Outputs:** Pointer events `{ x, y }` and hit detection.
++
++---
++
++# 7. WarmColdAgent
++**Purpose:** Compute warm/cold proximity effect and update the scene’s color filter.
++
++**Responsibilities:**
++- Compute warmFactor `0 → 1` based on distance between pointer and hidden object.
++- Apply warm/cold shift through `ColorMatrixFilter` or tint interpolation.
++- Maintain smooth transitions and iPad-friendly performance.
++
++**Outputs:** Updated filter matrix.
++
++---
++
++# 8. TimerAgent
++**Purpose:** Provide countdown logic for the single timed round.
++
++**Responsibilities:**
++- Track remaining milliseconds.
++- Expose `start`, `update`, `stop`, `onTimeout`.
++- Signal fail state when time reaches zero.
++
++**Outputs:** Timer state + remaining time.
++
++---
++
++# 9. GameStateAgent
++**Purpose:** Maintain the finite state machine of the round.
++
++**States:**
++- `idle`
++- `running`
++- `success`
++- `fail`
++
++**Responsibilities:**
++- Enforce legal transitions.
++- Expose read/write access to current state.
++
++**Outputs:** Game state status.
++
++---
++
++# 10. UIAgent
++**Purpose:** Render HUD elements and end-state messages.
++
++**Responsibilities:**
++- Draw timer bar and update its width.
++- Show status messages (“Find the object!”, “Success!”, “Time’s up!”).
++- Render restart button and emit restart action.
++- Maintain pixel-art-friendly placement for iPad.
++
++**Outputs:** UI container.
++
++---
++
++# 11. AudioAgent (Optional)
++**Purpose:** Supply minimal sound feedback.
++
++**Responsibilities:**
++- Load and play success/fail/timer-low sounds.
++- Follow iPad Safari interaction rules for playback.
++- Provide easy trigger methods.
++
++**Outputs:** Audio cues.
++
++---
++
++# 12. PerformanceAgent
++**Purpose:** Ensure smooth rendering on iPad.
++
++**Responsibilities:**
++- Monitor FPS via `app.ticker.FPS`.
++- Disable or reduce filter complexity if FPS < target.
++- Provide performance flags to MainScene.
++
++**Outputs:** Performance state.
++
++---
++
++# 13. EntryPointAgent
++**Purpose:** Execute the startup sequence of the entire game.
++
++**Responsibilities:**
++- Create PixiJS Application via AppBootstrapAgent.
++- Load assets via AssetLoaderAgent.
++- Initialize SceneManagerAgent and fully start the game.
++
++**Outputs:** Running game.
++
++---
++
++# End of agents.md
 diff --git a/index.html b/index.html
-new file mode 100644
-index 0000000000000000000000000000000000000000..c9527f509b6791b7c76131da615b5ee64c3eb088
---- /dev/null
+index c9527f509b6791b7c76131da615b5ee64c3eb088..a96dd2b89dede19aa466fcf3a7d044282d5bead3 100644
+--- a/index.html
 +++ b/index.html
-@@ -0,0 +1,36 @@
-+<!DOCTYPE html>
-+<html lang="en">
-+  <head>
-+    <meta charset="UTF-8" />
-+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-+    <title>Pixi.js Starter</title>
-+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-+    <link rel="stylesheet" href="./styles.css" />
-+  </head>
-+  <body>
-+    <main>
-+      <section class="hero">
-+        <div class="hero__content">
-+          <p class="eyebrow">Pixi.js + GitHub Pages</p>
-+          <h1>Welcome to a tiny canvas playground</h1>
-+          <p class="lede">
-+            This demo keeps everything client-side so it can be hosted on GitHub
-+            Pages without any build step. Edit <code>index.html</code> and
-+            <code>main.js</code> to keep experimenting.
-+          </p>
-+          <div class="cta-row">
-+            <a class="cta" href="https://pixijs.com/" target="_blank" rel="noreferrer">
-+              Pixi.js docs
-+            </a>
-+            <a class="cta ghost" href="https://github.com" target="_blank" rel="noreferrer">
-+              View on GitHub
-+            </a>
-+          </div>
-+        </div>
-+        <div class="hero__canvas" id="canvas-wrapper"></div>
-+      </section>
-+    </main>
-+
-+    <script type="module" src="./main.js"></script>
-+  </body>
-+</html>
+@@ -1,36 +1,29 @@
+ <!DOCTYPE html>
+ <html lang="en">
+   <head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Pixi.js Starter</title>
++    <title>Warm & Cold – PixiJS Prototype</title>
+     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+     <link rel="stylesheet" href="./styles.css" />
+   </head>
+   <body>
+     <main>
+       <section class="hero">
+         <div class="hero__content">
+-          <p class="eyebrow">Pixi.js + GitHub Pages</p>
+-          <h1>Welcome to a tiny canvas playground</h1>
++          <p class="eyebrow">Warm & Cold</p>
++          <h1>Single-level PixiJS prototype</h1>
+           <p class="lede">
+-            This demo keeps everything client-side so it can be hosted on GitHub
+-            Pages without any build step. Edit <code>index.html</code> and
+-            <code>main.js</code> to keep experimenting.
++            This first milestone wires the agents from <code>agents.md</code> into a
++            running PixiJS experience. Move the pointer to see the warmth effect,
++            find the hidden object before the timer runs out, and tap the restart
++            chip to try again.
+           </p>
+-          <div class="cta-row">
+-            <a class="cta" href="https://pixijs.com/" target="_blank" rel="noreferrer">
+-              Pixi.js docs
+-            </a>
+-            <a class="cta ghost" href="https://github.com" target="_blank" rel="noreferrer">
+-              View on GitHub
+-            </a>
+-          </div>
+         </div>
+-        <div class="hero__canvas" id="canvas-wrapper"></div>
++        <div class="hero__canvas" id="game"></div>
+       </section>
+     </main>
+ 
+     <script type="module" src="./main.js"></script>
+   </body>
+ </html>
 diff --git a/main.js b/main.js
-new file mode 100644
-index 0000000000000000000000000000000000000000..915f0d384a3122565468b2021096814b934c17ee
---- /dev/null
+index 915f0d384a3122565468b2021096814b934c17ee..c972f640031cef300c83874e6aaa1788002e49c7 100644
+--- a/main.js
 +++ b/main.js
-@@ -0,0 +1,141 @@
-+import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.min.mjs";
-+
-+const wrapper = document.getElementById("canvas-wrapper");
-+
-+const app = new PIXI.Application();
-+await app.init({
-+  background: "#0c1224",
-+  resizeTo: wrapper,
-+  antialias: true,
-+});
-+
-+wrapper.appendChild(app.canvas);
-+
-+const starField = new PIXI.Graphics();
-+starField.beginFill(0x0b1023, 0.95);
-+starField.drawRect(0, 0, app.screen.width, app.screen.height);
-+starField.endFill();
-+app.stage.addChild(starField);
-+
-+const stars = [];
-+for (let i = 0; i < 60; i++) {
-+  const star = new PIXI.Graphics();
-+  const radius = Math.random() * 2 + 1;
-+  star.beginFill(0xffffff, Math.random() * 0.7 + 0.3);
-+  star.drawCircle(0, 0, radius);
-+  star.endFill();
-+  star.x = Math.random() * app.screen.width;
-+  star.y = Math.random() * app.screen.height;
-+  star.alpha = Math.random();
-+  app.stage.addChild(star);
-+  stars.push({ view: star, speed: 0.4 + Math.random() * 1.2 });
-+}
-+
-+const orbs = new PIXI.Container();
-+app.stage.addChild(orbs);
-+
-+function createOrb(color, x, y, direction) {
-+  const orb = new PIXI.Graphics();
-+  orb.beginFill(color, 0.9);
-+  orb.lineStyle({ color: 0xffffff, width: 2, alpha: 0.1 });
-+  orb.drawCircle(0, 0, 30);
-+  orb.endFill();
-+  orb.x = x;
-+  orb.y = y;
-+  orb.direction = direction;
-+  orb.speed = 1 + Math.random() * 1.4;
-+  orb.rotationSpeed = (Math.random() - 0.5) * 0.02;
-+  orb.pivot.set(0.5);
-+  orbs.addChild(orb);
-+  return orb;
-+}
-+
-+const palette = [0x7df0c4, 0x8be9fd, 0xd6b3ff, 0xffd166];
-+const orbSprites = palette.map((color, index) =>
-+  createOrb(color, 100 + index * 80, 120 + index * 30, index % 2 === 0 ? 1 : -1)
-+);
-+
-+const labelStyle = new PIXI.TextStyle({
-+  fill: 0xffffff,
-+  fontSize: 18,
-+  fontWeight: "700",
-+  dropShadow: true,
-+  dropShadowAlpha: 0.35,
-+  dropShadowBlur: 4,
-+  dropShadowAngle: Math.PI / 3,
-+  dropShadowDistance: 4,
-+});
-+
-+const label = new PIXI.Text({
-+  text: "Drag to stir the orbs",
-+  style: labelStyle,
-+});
-+label.anchor.set(0.5);
-+label.position.set(app.screen.width / 2, app.screen.height - 40);
-+app.stage.addChild(label);
-+
-+const cursor = new PIXI.Graphics();
-+cursor.beginFill(0xffffff);
-+cursor.drawCircle(0, 0, 6);
-+cursor.endFill();
-+cursor.alpha = 0;
-+app.stage.addChild(cursor);
-+
-+let pointerPos = { x: app.screen.width / 2, y: app.screen.height / 2 };
-+let pointerActive = false;
-+
-+app.stage.eventMode = "static";
-+app.stage.hitArea = app.screen;
-+app.stage.cursor = "grab";
-+
-+app.stage
-+  .on("pointerdown", (event) => {
-+    pointerActive = true;
-+    pointerPos = event.global.clone();
-+    cursor.alpha = 1;
-+    app.stage.cursor = "grabbing";
-+  })
-+  .on("pointerup", () => {
-+    pointerActive = false;
-+    cursor.alpha = 0;
-+    app.stage.cursor = "grab";
-+  })
-+  .on("pointerupoutside", () => {
-+    pointerActive = false;
-+    cursor.alpha = 0;
-+    app.stage.cursor = "grab";
-+  })
-+  .on("pointermove", (event) => {
-+    pointerPos = event.global.clone();
-+    cursor.position.copyFrom(pointerPos);
-+  });
-+
-+app.ticker.add((delta) => {
-+  stars.forEach((star) => {
-+    star.view.y += star.speed * delta;
-+    star.view.alpha = 0.4 + Math.abs(Math.sin(app.ticker.lastTime * 0.0015 + star.view.x)) * 0.5;
-+    if (star.view.y > app.screen.height) {
-+      star.view.y = -2;
-+      star.view.x = Math.random() * app.screen.width;
-+    }
-+  });
-+
-+  orbSprites.forEach((orb, index) => {
-+    orb.x += orb.direction * orb.speed * delta + (pointerActive ? (pointerPos.x - orb.x) * 0.002 : 0);
-+    orb.y += Math.cos(app.ticker.lastTime * 0.0015 + index) * 0.8 * delta + (pointerActive ? (pointerPos.y - orb.y) * 0.002 : 0);
-+    orb.rotation += orb.rotationSpeed * delta;
-+
-+    orb.x = (orb.x + app.screen.width) % app.screen.width;
-+    orb.y = (orb.y + app.screen.height) % app.screen.height;
-+  });
-+
-+  label.position.set(app.screen.width / 2, app.screen.height - 40);
-+});
-+
-+app.renderer.on("resize", () => {
-+  starField.clear();
-+  starField.beginFill(0x0b1023, 0.95);
-+  starField.drawRect(0, 0, app.screen.width, app.screen.height);
-+  starField.endFill();
-+  label.position.set(app.screen.width / 2, app.screen.height - 40);
-+});
-diff --git a/styles.css b/styles.css
+@@ -1,141 +1,11 @@
+-import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.min.mjs";
++import { createApplication } from "./src/appBootstrap.js";
++import { loadAssets } from "./src/assetLoader.js";
++import { SceneManagerAgent } from "./src/sceneManager.js";
+ 
+-const wrapper = document.getElementById("canvas-wrapper");
++(async function entryPoint() {
++  const app = await createApplication();
++  await loadAssets();
+ 
+-const app = new PIXI.Application();
+-await app.init({
+-  background: "#0c1224",
+-  resizeTo: wrapper,
+-  antialias: true,
+-});
+-
+-wrapper.appendChild(app.canvas);
+-
+-const starField = new PIXI.Graphics();
+-starField.beginFill(0x0b1023, 0.95);
+-starField.drawRect(0, 0, app.screen.width, app.screen.height);
+-starField.endFill();
+-app.stage.addChild(starField);
+-
+-const stars = [];
+-for (let i = 0; i < 60; i++) {
+-  const star = new PIXI.Graphics();
+-  const radius = Math.random() * 2 + 1;
+-  star.beginFill(0xffffff, Math.random() * 0.7 + 0.3);
+-  star.drawCircle(0, 0, radius);
+-  star.endFill();
+-  star.x = Math.random() * app.screen.width;
+-  star.y = Math.random() * app.screen.height;
+-  star.alpha = Math.random();
+-  app.stage.addChild(star);
+-  stars.push({ view: star, speed: 0.4 + Math.random() * 1.2 });
+-}
+-
+-const orbs = new PIXI.Container();
+-app.stage.addChild(orbs);
+-
+-function createOrb(color, x, y, direction) {
+-  const orb = new PIXI.Graphics();
+-  orb.beginFill(color, 0.9);
+-  orb.lineStyle({ color: 0xffffff, width: 2, alpha: 0.1 });
+-  orb.drawCircle(0, 0, 30);
+-  orb.endFill();
+-  orb.x = x;
+-  orb.y = y;
+-  orb.direction = direction;
+-  orb.speed = 1 + Math.random() * 1.4;
+-  orb.rotationSpeed = (Math.random() - 0.5) * 0.02;
+-  orb.pivot.set(0.5);
+-  orbs.addChild(orb);
+-  return orb;
+-}
+-
+-const palette = [0x7df0c4, 0x8be9fd, 0xd6b3ff, 0xffd166];
+-const orbSprites = palette.map((color, index) =>
+-  createOrb(color, 100 + index * 80, 120 + index * 30, index % 2 === 0 ? 1 : -1)
+-);
+-
+-const labelStyle = new PIXI.TextStyle({
+-  fill: 0xffffff,
+-  fontSize: 18,
+-  fontWeight: "700",
+-  dropShadow: true,
+-  dropShadowAlpha: 0.35,
+-  dropShadowBlur: 4,
+-  dropShadowAngle: Math.PI / 3,
+-  dropShadowDistance: 4,
+-});
+-
+-const label = new PIXI.Text({
+-  text: "Drag to stir the orbs",
+-  style: labelStyle,
+-});
+-label.anchor.set(0.5);
+-label.position.set(app.screen.width / 2, app.screen.height - 40);
+-app.stage.addChild(label);
+-
+-const cursor = new PIXI.Graphics();
+-cursor.beginFill(0xffffff);
+-cursor.drawCircle(0, 0, 6);
+-cursor.endFill();
+-cursor.alpha = 0;
+-app.stage.addChild(cursor);
+-
+-let pointerPos = { x: app.screen.width / 2, y: app.screen.height / 2 };
+-let pointerActive = false;
+-
+-app.stage.eventMode = "static";
+-app.stage.hitArea = app.screen;
+-app.stage.cursor = "grab";
+-
+-app.stage
+-  .on("pointerdown", (event) => {
+-    pointerActive = true;
+-    pointerPos = event.global.clone();
+-    cursor.alpha = 1;
+-    app.stage.cursor = "grabbing";
+-  })
+-  .on("pointerup", () => {
+-    pointerActive = false;
+-    cursor.alpha = 0;
+-    app.stage.cursor = "grab";
+-  })
+-  .on("pointerupoutside", () => {
+-    pointerActive = false;
+-    cursor.alpha = 0;
+-    app.stage.cursor = "grab";
+-  })
+-  .on("pointermove", (event) => {
+-    pointerPos = event.global.clone();
+-    cursor.position.copyFrom(pointerPos);
+-  });
+-
+-app.ticker.add((delta) => {
+-  stars.forEach((star) => {
+-    star.view.y += star.speed * delta;
+-    star.view.alpha = 0.4 + Math.abs(Math.sin(app.ticker.lastTime * 0.0015 + star.view.x)) * 0.5;
+-    if (star.view.y > app.screen.height) {
+-      star.view.y = -2;
+-      star.view.x = Math.random() * app.screen.width;
+-    }
+-  });
+-
+-  orbSprites.forEach((orb, index) => {
+-    orb.x += orb.direction * orb.speed * delta + (pointerActive ? (pointerPos.x - orb.x) * 0.002 : 0);
+-    orb.y += Math.cos(app.ticker.lastTime * 0.0015 + index) * 0.8 * delta + (pointerActive ? (pointerPos.y - orb.y) * 0.002 : 0);
+-    orb.rotation += orb.rotationSpeed * delta;
+-
+-    orb.x = (orb.x + app.screen.width) % app.screen.width;
+-    orb.y = (orb.y + app.screen.height) % app.screen.height;
+-  });
+-
+-  label.position.set(app.screen.width / 2, app.screen.height - 40);
+-});
+-
+-app.renderer.on("resize", () => {
+-  starField.clear();
+-  starField.beginFill(0x0b1023, 0.95);
+-  starField.drawRect(0, 0, app.screen.width, app.screen.height);
+-  starField.endFill();
+-  label.position.set(app.screen.width / 2, app.screen.height - 40);
+-});
++  const sceneManager = new SceneManagerAgent(app);
++  sceneManager.start();
++})();
+diff --git a/src/appBootstrap.js b/src/appBootstrap.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..2d7be0fbdc28be208c80f5831aa4fbaada61483f
+index 0000000000000000000000000000000000000000..53db60dfcfda901427194f27e48063c6ad23ba52
 --- /dev/null
++++ b/src/appBootstrap.js
+@@ -0,0 +1,33 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
++
++export async function createApplication(containerId = "game") {
++  const mount = document.getElementById(containerId);
++  if (!mount) {
++    throw new Error(`#${containerId} element not found`);
++  }
++
++  const app = new PIXI.Application();
++  await app.init({
++    resizeTo: window,
++    resolution: window.devicePixelRatio || 1,
++    background: "#0c1224",
++    antialias: true,
++  });
++
++  mount.innerHTML = "";
++  mount.appendChild(app.canvas);
++  handleResponsiveCanvas(app, mount);
++
++  return app;
++}
++
++function handleResponsiveCanvas(app, mount) {
++  const resizeCanvas = () => {
++    const maxWidth = mount.clientWidth;
++    app.renderer.view.style.maxWidth = `${maxWidth}px`;
++  };
++
++  resizeCanvas();
++  window.addEventListener("resize", resizeCanvas);
++  window.addEventListener("orientationchange", resizeCanvas);
++}
+diff --git a/src/assetLoader.js b/src/assetLoader.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..10935d5ba7b8fa9d9cf2fb6ea061a6c6ef559af7
+--- /dev/null
++++ b/src/assetLoader.js
+@@ -0,0 +1,39 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
++
++const assets = {
++  background: {
++    alias: "background_main",
++    src: createSolidDataUrl("#162033", 1200, 800, "Background"),
++  },
++  hiddenObject: {
++    alias: "hidden_object",
++    src: createSolidDataUrl("#ffd166", 120, 120, "Hidden"),
++  },
++  timerBar: {
++    alias: "ui_timer_bar",
++    src: createSolidDataUrl("#7df0c4", 400, 32, "Timer"),
++  },
++  restart: {
++    alias: "ui_restart",
++    src: createSolidDataUrl("#8be9fd", 140, 140, "Restart"),
++  },
++};
++
++export async function loadAssets() {
++  PIXI.Assets.init();
++  Object.values(assets).forEach((asset) => {
++    PIXI.Assets.add({ alias: asset.alias, src: asset.src });
++  });
++
++  const textures = await PIXI.Assets.load(Object.keys(assets).map((key) => assets[key].alias));
++  return textures;
++}
++
++export function getTexture(alias) {
++  return PIXI.Texture.from(alias);
++}
++
++function createSolidDataUrl(color, width, height, label) {
++  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><style>.label{font-family:Arial,sans-serif;font-size:32px;font-weight:bold;fill:#0c1224;opacity:0.55}</style></defs><rect width="100%" height="100%" rx="12" ry="12" fill="${color}"/><text x="50%" y="52%" text-anchor="middle" class="label">${label}</text></svg>`;
++  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
++}
+diff --git a/src/gameStateAgent.js b/src/gameStateAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..47e798a77c1e10f1808c9a645904c4e3c2c87ea8
+--- /dev/null
++++ b/src/gameStateAgent.js
+@@ -0,0 +1,22 @@
++export class GameStateAgent {
++  constructor() {
++    this.state = "idle";
++  }
++
++  setState(next) {
++    const valid = {
++      idle: ["running"],
++      running: ["success", "fail", "running"],
++      success: ["running", "idle"],
++      fail: ["running", "idle"],
++    };
++
++    const allowed = valid[this.state] || [];
++    if (!allowed.includes(next)) {
++      return false;
++    }
++
++    this.state = next;
++    return true;
++  }
++}
+diff --git a/src/interactionAgent.js b/src/interactionAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..400f9333573df107cf7e15dff3f046c04e31c541
+--- /dev/null
++++ b/src/interactionAgent.js
+@@ -0,0 +1,22 @@
++export class InteractionAgent {
++  constructor(container) {
++    this.container = container;
++    this.container.eventMode = "static";
++    this.container.cursor = "pointer";
++    this.pointerPosition = { x: 0, y: 0 };
++    this.pointerActive = false;
++    this.onPointerMove = () => {};
++    this.onPointerTap = () => {};
++
++    this.container.on("pointermove", (event) => {
++      this.pointerPosition = event.global.clone();
++      this.pointerActive = true;
++      this.onPointerMove(this.pointerPosition);
++    });
++
++    this.container.on("pointertap", (event) => {
++      this.pointerPosition = event.global.clone();
++      this.onPointerTap(this.pointerPosition);
++    });
++  }
++}
+diff --git a/src/mainScene.js b/src/mainScene.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..20c8eb60c309df550e7d374f70179a9c17a69751
+--- /dev/null
++++ b/src/mainScene.js
+@@ -0,0 +1,109 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
++import { getTexture } from "./assetLoader.js";
++import { ObjectPlacementAgent } from "./objectPlacementAgent.js";
++import { InteractionAgent } from "./interactionAgent.js";
++import { WarmColdAgent } from "./warmColdAgent.js";
++import { TimerAgent } from "./timerAgent.js";
++import { GameStateAgent } from "./gameStateAgent.js";
++import { UIAgent } from "./uiAgent.js";
++
++export class MainScene {
++  constructor(app) {
++    this.app = app;
++    this.container = new PIXI.Container();
++
++    this.gameState = new GameStateAgent();
++    this.timer = new TimerAgent();
++    this.ui = new UIAgent(app);
++    this.warmCold = new WarmColdAgent();
++
++    this.background = this.createBackground();
++    this.hiddenObject = this.createHiddenObject();
++    this.interaction = new InteractionAgent(this.container);
++
++    this.container.addChild(this.background, this.hiddenObject, this.ui.container);
++    this.background.filters = [this.warmCold.filter];
++
++    this.registerInteractions();
++    this.timer.onTimeout = () => this.onFail();
++    this.gameState.setState("running");
++    this.timer.start();
++    this.app.ticker.add(this.update, this);
++  }
++
++  createBackground() {
++    const bg = new PIXI.Sprite(getTexture("background_main"));
++    bg.width = this.app.screen.width;
++    bg.height = this.app.screen.height;
++    bg.tint = 0x0d152d;
++    bg.eventMode = "static";
++    bg.cursor = "pointer";
++    return bg;
++  }
++
++  createHiddenObject() {
++    const hidden = new PIXI.Sprite(getTexture("hidden_object"));
++    hidden.anchor.set(0.5);
++    hidden.scale.set(0.4);
++    this.placeHiddenObject(hidden);
++    return hidden;
++  }
++
++  placeHiddenObject(sprite) {
++    const placement = new ObjectPlacementAgent(
++      { width: this.app.screen.width, height: this.app.screen.height },
++      { width: sprite.width, height: sprite.height },
++      40
++    );
++    const position = placement.randomPosition();
++    sprite.position.copyFrom(position);
++  }
++
++  registerInteractions() {
++    this.interaction.onPointerMove = (position) => this.handlePointerMove(position);
++    this.interaction.onPointerTap = (position) => this.handleTap(position);
++    this.ui.restartButton.on("pointertap", () => this.restart());
++  }
++
++  handlePointerMove(position) {
++    if (this.gameState.state !== "running") return;
++    this.warmCold.update(position, this.hiddenObject.position);
++  }
++
++  handleTap(position) {
++    if (this.gameState.state !== "running") return;
++    const bounds = this.hiddenObject.getBounds();
++    if (bounds.contains(position.x, position.y)) {
++      this.onSuccess();
++    }
++  }
++
++  onSuccess() {
++    if (!this.gameState.setState("success")) return;
++    this.timer.stop();
++    this.ui.setMessage("Success! You found it.");
++    this.hiddenObject.tint = 0x7df0c4;
++  }
++
++  onFail() {
++    if (!this.gameState.setState("fail")) return;
++    this.ui.setMessage("Time's up!");
++    this.hiddenObject.tint = 0xff8fa3;
++  }
++
++  restart() {
++    this.gameState.setState("running");
++    this.ui.setMessage("Find the object!");
++    this.hiddenObject.tint = 0xffffff;
++    this.placeHiddenObject(this.hiddenObject);
++    this.timer.start();
++  }
++
++  update(delta) {
++    const deltaMs = (1000 / 60) * delta;
++    this.timer.update(deltaMs);
++    const progress = this.timer.remainingMs / this.timer.durationMs;
++    this.ui.updateTimer(progress);
++    this.ui.layout();
++  }
++}
+diff --git a/src/objectPlacementAgent.js b/src/objectPlacementAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc92130c777904965b699f27051632121afa5237
+--- /dev/null
++++ b/src/objectPlacementAgent.js
+@@ -0,0 +1,23 @@
++export class ObjectPlacementAgent {
++  constructor(backgroundSize, objectSize, padding = 24) {
++    this.backgroundSize = backgroundSize;
++    this.objectSize = objectSize;
++    this.padding = padding;
++  }
++
++  randomPosition() {
++    const minX = this.padding + this.objectSize.width / 2;
++    const maxX = this.backgroundSize.width - this.padding - this.objectSize.width / 2;
++    const minY = this.padding + this.objectSize.height / 2;
++    const maxY = this.backgroundSize.height - this.padding - this.objectSize.height / 2;
++
++    return {
++      x: randomBetween(minX, maxX),
++      y: randomBetween(minY, maxY),
++    };
++  }
++}
++
++function randomBetween(min, max) {
++  return Math.random() * (max - min) + min;
++}
+diff --git a/src/sceneManager.js b/src/sceneManager.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4eb2869f0f700f269e5db4513f1599f81fea0ec3
+--- /dev/null
++++ b/src/sceneManager.js
+@@ -0,0 +1,25 @@
++import { MainScene } from "./mainScene.js";
++
++export class SceneManagerAgent {
++  constructor(app) {
++    this.app = app;
++    this.currentScene = null;
++  }
++
++  start() {
++    this.replaceScene(new MainScene(this.app));
++  }
++
++  restartGame() {
++    this.replaceScene(new MainScene(this.app));
++  }
++
++  replaceScene(scene) {
++    if (this.currentScene) {
++      this.app.stage.removeChild(this.currentScene.container);
++      this.app.ticker.remove(this.currentScene.update, this.currentScene);
++    }
++    this.currentScene = scene;
++    this.app.stage.addChild(scene.container);
++  }
++}
+diff --git a/src/timerAgent.js b/src/timerAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..724b58a7a6055c6166103167eac1d6d1560cc30e
+--- /dev/null
++++ b/src/timerAgent.js
+@@ -0,0 +1,27 @@
++export class TimerAgent {
++  constructor(durationMs = 20000) {
++    this.durationMs = durationMs;
++    this.remainingMs = durationMs;
++    this.running = false;
++    this.onTimeout = () => {};
++  }
++
++  start() {
++    this.remainingMs = this.durationMs;
++    this.running = true;
++  }
++
++  stop() {
++    this.running = false;
++  }
++
++  update(deltaMs) {
++    if (!this.running) return;
++    this.remainingMs -= deltaMs;
++    if (this.remainingMs <= 0) {
++      this.remainingMs = 0;
++      this.running = false;
++      this.onTimeout();
++    }
++  }
++}
+diff --git a/src/uiAgent.js b/src/uiAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2fc62d68f17b1d3930bed05b9fe815e0d055fba
+--- /dev/null
++++ b/src/uiAgent.js
+@@ -0,0 +1,76 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
++import { getTexture } from "./assetLoader.js";
++
++export class UIAgent {
++  constructor(app) {
++    this.app = app;
++    this.container = new PIXI.Container();
++    this.label = this.createLabel();
++    this.timerBar = this.createTimerBar();
++    this.restartButton = this.createRestartButton();
++
++    this.container.addChild(this.label, this.timerBar, this.restartButton);
++    this.layout();
++  }
++
++  createLabel() {
++    const text = new PIXI.Text({
++      text: "Find the object!",
++      style: new PIXI.TextStyle({
++        fill: 0xffffff,
++        fontSize: 20,
++        fontWeight: "700",
++        dropShadow: true,
++        dropShadowDistance: 2,
++        dropShadowBlur: 2,
++        dropShadowAlpha: 0.4,
++      }),
++    });
++    text.anchor.set(0, 0.5);
++    text.position.set(24, 32);
++    return text;
++  }
++
++  createTimerBar() {
++    const bar = new PIXI.Sprite(getTexture("ui_timer_bar"));
++    bar.anchor.set(0, 0.5);
++    bar.position.set(24, 70);
++    bar.scale.set(1, 0.35);
++    bar.tint = 0x7df0c4;
++    bar.alpha = 0.9;
++    this.timerBaseWidth = bar.width;
++    return bar;
++  }
++
++  createRestartButton() {
++    const button = new PIXI.Sprite(getTexture("ui_restart"));
++    button.anchor.set(1, 1);
++    button.position.set(this.app.screen.width - 24, this.app.screen.height - 24);
++    button.scale.set(0.35);
++    button.alpha = 0.8;
++    button.eventMode = "static";
++    button.cursor = "pointer";
++    this.restartButton = button;
++    return button;
++  }
++
++  updateTimer(progress) {
++    const clamped = Math.max(0, Math.min(1, progress));
++    this.timerBar.scale.x = clamped;
++    if (clamped < 0.25) {
++      this.timerBar.tint = 0xff8fa3;
++    } else if (clamped < 0.5) {
++      this.timerBar.tint = 0xffd166;
++    } else {
++      this.timerBar.tint = 0x7df0c4;
++    }
++  }
++
++  setMessage(text) {
++    this.label.text = text;
++  }
++
++  layout() {
++    this.restartButton.position.set(this.app.screen.width - 24, this.app.screen.height - 24);
++  }
++}
+diff --git a/src/warmColdAgent.js b/src/warmColdAgent.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..935c5fdcf1ce9bb45d293cf5fc9ede390cbe2c03
+--- /dev/null
++++ b/src/warmColdAgent.js
+@@ -0,0 +1,41 @@
++import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
++
++export class WarmColdAgent {
++  constructor() {
++    this.filter = new PIXI.ColorMatrixFilter();
++  }
++
++  update(pointer, target) {
++    const distance = Math.hypot(pointer.x - target.x, pointer.y - target.y);
++    const maxDistance = 600;
++    const warmFactor = Math.max(0, Math.min(1, 1 - distance / maxDistance));
++    this.applyWarmth(warmFactor);
++    return warmFactor;
++  }
++
++  applyWarmth(warmFactor) {
++    const tintShift = warmFactor * 0.6;
++    this.filter.matrix = [
++      1 + tintShift,
++      tintShift * 0.15,
++      -tintShift * 0.1,
++      0,
++      0,
++      -tintShift * 0.05,
++      1,
++      tintShift * 0.05,
++      0,
++      0,
++      -tintShift * 0.05,
++      -tintShift * 0.05,
++      1,
++      0,
++      0,
++      0,
++      0,
++      0,
++      1,
++      0,
++    ];
++  }
++}
+diff --git a/styles.css b/styles.css
+index 2d7be0fbdc28be208c80f5831aa4fbaada61483f..9597a29d8201f80a36469d2aa67cd230a3293f8b 100644
+--- a/styles.css
 +++ b/styles.css
-@@ -0,0 +1,136 @@
-+:root {
-+  color-scheme: light;
-+  --bg: radial-gradient(circle at 20% 20%, #1f2f5d, #0b1226 40%);
-+  --panel: rgba(255, 255, 255, 0.08);
-+  --text: #e9edf5;
-+  --muted: #b8c1d9;
-+  --accent: #8be9fd;
-+  --ghost: rgba(255, 255, 255, 0.15);
-+  --shadow: 0 15px 60px rgba(0, 0, 0, 0.3);
-+}
-+
-+* {
-+  box-sizing: border-box;
-+}
-+
-+body {
-+  margin: 0;
-+  min-height: 100vh;
-+  font-family: "Inter", system-ui, -apple-system, sans-serif;
-+  background: var(--bg);
-+  color: var(--text);
-+}
-+
-+main {
+@@ -8,129 +8,100 @@
+   --ghost: rgba(255, 255, 255, 0.15);
+   --shadow: 0 15px 60px rgba(0, 0, 0, 0.3);
+ }
+ 
+ * {
+   box-sizing: border-box;
+ }
+ 
+ body {
+   margin: 0;
+   min-height: 100vh;
+   font-family: "Inter", system-ui, -apple-system, sans-serif;
+   background: var(--bg);
+   color: var(--text);
+ }
+ 
+ main {
+   display: grid;
+   place-items: center;
+   padding: 48px 24px 64px;
+ }
+ 
+ .hero {
+   display: grid;
+   gap: 28px;
+-  max-width: 1000px;
+-  width: min(100%, 1100px);
+-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+-  align-items: center;
++  max-width: 1200px;
++  width: min(100%, 1200px);
++  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
++  align-items: stretch;
+ }
+ 
+ .hero__content {
+   background: var(--panel);
+   padding: 28px;
+   border-radius: 18px;
+   box-shadow: var(--shadow);
+   border: 1px solid rgba(255, 255, 255, 0.08);
+ }
+ 
+ .hero__canvas {
+   background: var(--panel);
+   padding: 12px;
+   border-radius: 18px;
+   box-shadow: var(--shadow);
+   border: 1px solid rgba(255, 255, 255, 0.08);
 +  display: grid;
 +  place-items: center;
-+  padding: 48px 24px 64px;
-+}
-+
-+.hero {
-+  display: grid;
-+  gap: 28px;
-+  max-width: 1000px;
-+  width: min(100%, 1100px);
-+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-+  align-items: center;
-+}
-+
-+.hero__content {
-+  background: var(--panel);
-+  padding: 28px;
-+  border-radius: 18px;
-+  box-shadow: var(--shadow);
-+  border: 1px solid rgba(255, 255, 255, 0.08);
-+}
-+
-+.hero__canvas {
-+  background: var(--panel);
-+  padding: 12px;
-+  border-radius: 18px;
-+  box-shadow: var(--shadow);
-+  border: 1px solid rgba(255, 255, 255, 0.08);
-+}
-+
-+h1 {
-+  margin: 12px 0;
-+  letter-spacing: -0.5px;
-+  font-size: clamp(1.9rem, 3vw, 2.4rem);
-+}
-+
-+p {
-+  margin: 0;
-+}
-+
-+.lede {
-+  margin-top: 12px;
-+  color: var(--muted);
-+  line-height: 1.6;
-+}
-+
-+.eyebrow {
-+  text-transform: uppercase;
-+  letter-spacing: 1.4px;
-+  font-size: 0.85rem;
-+  color: var(--accent);
-+  font-weight: 700;
-+}
-+
-+.cta-row {
-+  display: flex;
-+  flex-wrap: wrap;
-+  gap: 12px;
-+  margin-top: 20px;
-+}
-+
-+.cta {
-+  display: inline-flex;
-+  align-items: center;
-+  justify-content: center;
-+  padding: 12px 18px;
-+  border-radius: 12px;
-+  text-decoration: none;
-+  color: #0b1226;
-+  background: linear-gradient(135deg, #8be9fd, #7df0c4);
-+  font-weight: 700;
-+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
-+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-+}
-+
-+.cta:hover {
-+  transform: translateY(-2px);
-+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
-+}
-+
-+.cta.ghost {
-+  background: var(--ghost);
-+  color: var(--text);
-+  border: 1px solid rgba(255, 255, 255, 0.15);
-+}
-+
-+code {
-+  background: rgba(0, 0, 0, 0.3);
-+  padding: 3px 6px;
-+  border-radius: 6px;
-+  font-size: 0.9em;
-+}
-+
-+canvas {
-+  display: block;
-+  width: min(600px, 70vw);
-+  max-width: 100%;
-+  height: auto;
-+  border-radius: 12px;
-+  border: 1px solid rgba(255, 255, 255, 0.07);
-+}
-+
-+@media (max-width: 700px) {
-+  main {
-+    padding: 32px 18px 48px;
-+  }
-+
-+  .hero__content,
-+  .hero__canvas {
-+    padding: 20px;
-+  }
-+}
++  min-height: 520px;
+ }
+ 
+ h1 {
+   margin: 12px 0;
+   letter-spacing: -0.5px;
+   font-size: clamp(1.9rem, 3vw, 2.4rem);
+ }
+ 
+ p {
+   margin: 0;
+ }
+ 
+ .lede {
+   margin-top: 12px;
+   color: var(--muted);
+   line-height: 1.6;
+ }
+ 
+ .eyebrow {
+   text-transform: uppercase;
+   letter-spacing: 1.4px;
+   font-size: 0.85rem;
+   color: var(--accent);
+   font-weight: 700;
+ }
+ 
+-.cta-row {
+-  display: flex;
+-  flex-wrap: wrap;
+-  gap: 12px;
+-  margin-top: 20px;
+-}
+-
+-.cta {
+-  display: inline-flex;
+-  align-items: center;
+-  justify-content: center;
+-  padding: 12px 18px;
+-  border-radius: 12px;
+-  text-decoration: none;
+-  color: #0b1226;
+-  background: linear-gradient(135deg, #8be9fd, #7df0c4);
+-  font-weight: 700;
+-  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+-}
+-
+-.cta:hover {
+-  transform: translateY(-2px);
+-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+-}
+-
+-.cta.ghost {
+-  background: var(--ghost);
+-  color: var(--text);
+-  border: 1px solid rgba(255, 255, 255, 0.15);
+-}
+-
+ code {
+   background: rgba(0, 0, 0, 0.3);
+   padding: 3px 6px;
+   border-radius: 6px;
+   font-size: 0.9em;
+ }
+ 
+ canvas {
+   display: block;
+-  width: min(600px, 70vw);
++  width: min(840px, 70vw);
+   max-width: 100%;
+   height: auto;
+   border-radius: 12px;
+   border: 1px solid rgba(255, 255, 255, 0.07);
+ }
+ 
+ @media (max-width: 700px) {
+   main {
+     padding: 32px 18px 48px;
+   }
+ 
+   .hero__content,
+   .hero__canvas {
+     padding: 20px;
+   }
+ }
  
 EOF
 )
