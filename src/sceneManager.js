@@ -7,22 +7,20 @@ export class SceneManagerAgent {
   }
 
   start() {
-    this.replaceScene(this.createScene());
+    this.replaceScene();
   }
 
   restartGame() {
-    this.replaceScene(this.createScene());
+    this.replaceScene();
   }
 
-  createScene() {
-    return new MainScene(this.app, () => this.restartGame());
-  }
-
-  replaceScene(scene) {
+  replaceScene() {
     if (this.currentScene) {
       this.currentScene.destroy();
+      this.currentScene = null;
     }
-    this.currentScene = scene;
-    this.app.stage.addChild(scene.container);
+    const nextScene = new MainScene(this.app, () => this.restartGame());
+    this.currentScene = nextScene;
+    this.app.stage.addChild(nextScene.container);
   }
 }

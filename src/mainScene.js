@@ -22,7 +22,7 @@ export class MainScene {
     this.warmCold = new WarmColdAgent();
     this.performance = new PerformanceAgent(app);
     this.audio = new AudioAgent();
-    this.audio.setBackground("./assets/audio/cool-hip-hop-loop-275527.mp3");
+    this.audio.setBackground("./assets/audio/bg.music.mp3");
     this.audio.setSfx("win", "./assets/audio/win.mp3");
     this.audio.setSfx("fail", "./assets/audio/gameover.mp3");
     this.timerLowPlayed = false;
@@ -195,6 +195,7 @@ export class MainScene {
     this.app.ticker.remove(this.update, this);
     this.interaction.destroy();
     this.ui.destroy();
+    this.audio.destroy();
     this.container.removeAllListeners();
     this.container.removeFromParent();
     this.container.destroy({ children: true, texture: false, baseTexture: false });

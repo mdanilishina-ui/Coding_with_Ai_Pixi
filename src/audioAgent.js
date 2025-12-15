@@ -26,6 +26,8 @@ export class AudioAgent {
     if (!this.unlocked) return;
     const clip = this.sfx[type];
     if (clip) {
+      this.stopBackground();
+      this.stopSfx(type);
       clip.currentTime = 0;
       const playPromise = clip.play();
       if (playPromise && typeof playPromise.catch === "function") {
@@ -88,5 +90,38 @@ export class AudioAgent {
     const audio = new Audio(src);
     audio.preload = "auto";
     this.sfx[type] = audio;
+  }
+
+  stopBackground() {
+    if (this.bg) {
+      this.bg.pause();
+      this.bg.currentTime = 0;
+      this.bgStarted = false;
+    }
+  }
+
+  stopSfx(type) {
+    if (type && this.sfx[type]) {
+      this.sfx[type].pause();
+      this.sfx[type].currentTime = 0;
+      return;
+    }
+    Object.values(this.sfx).forEach((clip) => {
+      clip.pause();
+      clip.currentTime = 0;
+    });
+  }
+
+  stopAll() {
+    this.stopBackground();
+    this.stopSfx();
+  }
+
+  destroy() {
+    this.stopAll();
+    this.bg = null;
+    this.sfx = {};
+    this.unlocked = false;
+    this.bgStarted = false;
   }
 }
