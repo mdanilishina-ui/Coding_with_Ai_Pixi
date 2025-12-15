@@ -1,15 +1,17 @@
-# Pixi.js GitHub Pages Demo
+# Warm & Cold – PixiJS Prototype
 
-A minimal Pixi.js playground that runs entirely in the browser—perfect for hosting with GitHub Pages. It draws a starry background with a handful of glowing orbs you can nudge around by dragging on the canvas.
+A single-level PixiJS experience that implements the agent responsibilities defined in `agents.md`. Move the pointer to heat up the background, find the hidden object before the timer expires, and tap the restart chip to try again.
 
 ## Running locally
-Just open `index.html` in your browser. No bundlers or servers are required.
+1. Install Node.js (no additional dependencies are required).
+2. Start the lightweight static server:
 
-## Deploying to GitHub Pages
-1. Push this repository to GitHub.
-2. In your repository settings, enable **Pages** and point it at the `main` branch (root folder).
-3. After GitHub finishes building, your demo will be live at the provided Pages URL.
+   ```bash
+   npm run dev
+   ```
+
+3. Open the logged URL (defaults to `http://localhost:4173`) in your browser or simulator.
 
 ## Customizing
-- Edit `main.js` to tweak the Pixi scene or add new sprites.
-- Update `styles.css` or the markup in `index.html` to change the layout and copy.
+- Edit `src` modules to adjust game logic (placement, timer, warm/cold effect, UI).
+- Update `styles.css` or `index.html` to tweak the landing layout and copy.

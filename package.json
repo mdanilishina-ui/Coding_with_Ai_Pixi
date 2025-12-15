@@ -1,0 +1,18 @@
+{
+  "name": "warm-cold-pixi",
+  "version": "1.0.0",
+  "description": "Single-level Warm & Cold PixiJS prototype served with a tiny local dev server.",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test": "echo \"No tests configured\""
+  },
+  "keywords": [
+    "pixijs",
+    "prototype",
+    "warm-cold"
+  ],
+  "author": "",
+  "license": "ISC"
+}
