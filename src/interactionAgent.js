@@ -1,5 +1,7 @@
+import * as PIXI from "https://cdn.jsdelivr.net/npm/pixi.js@8.1.5/dist/pixi.mjs";
+
 export class InteractionAgent {
-  constructor(container) {
+  constructor(container, app) {
     this.container = container;
     this.container.eventMode = "static";
     this.container.cursor = "pointer";
@@ -7,6 +9,8 @@ export class InteractionAgent {
     this.pointerActive = false;
     this.onPointerMove = () => {};
     this.onPointerTap = () => {};
+
+    this.resize(app.screen);
 
     this.container.on("pointermove", (event) => {
       this.pointerPosition = event.global.clone();
@@ -18,5 +22,9 @@ export class InteractionAgent {
       this.pointerPosition = event.global.clone();
       this.onPointerTap(this.pointerPosition);
     });
+  }
+
+  resize(screen) {
+    this.container.hitArea = new PIXI.Rectangle(0, 0, screen.width, screen.height);
   }
 }

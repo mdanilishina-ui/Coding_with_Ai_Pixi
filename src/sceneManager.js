@@ -7,11 +7,15 @@ export class SceneManagerAgent {
   }
 
   start() {
-    this.replaceScene(new MainScene(this.app));
+    this.replaceScene(this.createScene());
   }
 
   restartGame() {
-    this.replaceScene(new MainScene(this.app));
+    this.replaceScene(this.createScene());
+  }
+
+  createScene() {
+    return new MainScene(this.app, () => this.restartGame());
   }
 
   replaceScene(scene) {

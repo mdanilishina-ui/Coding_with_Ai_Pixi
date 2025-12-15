@@ -8,9 +8,11 @@ import { GameStateAgent } from "./gameStateAgent.js";
 import { UIAgent } from "./uiAgent.js";
 
 export class MainScene {
-  constructor(app) {
+  constructor(app, onRestart) {
     this.app = app;
+    this.onRestart = onRestart;
     this.container = new PIXI.Container();
+    this.screenSize = { width: app.screen.width, height: app.screen.height };
 
     this.gameState = new GameStateAgent();
     this.timer = new TimerAgent();
@@ -19,7 +21,7 @@ export class MainScene {
 
     this.background = this.createBackground();
     this.hiddenObject = this.createHiddenObject();
-    this.interaction = new InteractionAgent(this.container);
+    this.interaction = new InteractionAgent(this.container, this.app);
 
     this.container.addChild(this.background, this.hiddenObject, this.ui.container);
     this.background.filters = [this.warmCold.filter];
@@ -62,7 +64,9 @@ export class MainScene {
   registerInteractions() {
     this.interaction.onPointerMove = (position) => this.handlePointerMove(position);
     this.interaction.onPointerTap = (position) => this.handleTap(position);
-    this.ui.restartButton.on("pointertap", () => this.restart());
+    if (this.onRestart) {
+      this.ui.restartButton.on("pointertap", () => this.onRestart());
+    }
   }
 
   handlePointerMove(position) {
@@ -91,19 +95,25 @@ export class MainScene {
     this.hiddenObject.tint = 0xff8fa3;
   }
 
-  restart() {
-    this.gameState.setState("running");
-    this.ui.setMessage("Find the object!");
-    this.hiddenObject.tint = 0xffffff;
-    this.placeHiddenObject(this.hiddenObject);
-    this.timer.start();
-  }
-
   update(delta) {
+    this.syncToResize();
     const deltaMs = (1000 / 60) * delta;
     this.timer.update(deltaMs);
     const progress = this.timer.remainingMs / this.timer.durationMs;
     this.ui.updateTimer(progress);
+    this.ui.layout();
+  }
+
+  syncToResize() {
+    const { width, height } = this.app.screen;
+    if (width === this.screenSize.width && height === this.screenSize.height) {
+      return;
+    }
+
+    this.screenSize = { width, height };
+    this.background.width = width;
+    this.background.height = height;
+    this.interaction.resize(this.app.screen);
     this.ui.layout();
   }
 }
