@@ -2,6 +2,9 @@ export class AudioAgent {
   constructor() {
     this.ctx = null;
     this.unlocked = false;
+    this.bg = null;
+    this.bgStarted = false;
+    this.sfx = {};
   }
 
   unlock() {
@@ -14,13 +17,26 @@ export class AudioAgent {
     source.connect(this.ctx.destination);
     source.start(0);
     this.unlocked = true;
+
+    // Start background loop if configured.
+    this.playBackground();
   }
 
   play(type = "success") {
     if (!this.unlocked) return;
+    const clip = this.sfx[type];
+    if (clip) {
+      clip.currentTime = 0;
+      const playPromise = clip.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {});
+      }
+      return;
+    }
+
+    // Fallback beep if no clip provided.
     const ctx = this.ctx || new AudioContext();
     this.ctx = ctx;
-
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -45,5 +61,32 @@ export class AudioAgent {
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.25);
+  }
+
+  setBackground(src) {
+    if (this.bg) return;
+    const audio = new Audio(src);
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.preload = "auto";
+    this.bg = audio;
+  }
+
+  playBackground() {
+    if (!this.bg || this.bgStarted) return;
+    this.bgStarted = true;
+    const play = this.bg.play();
+    if (play && typeof play.catch === "function") {
+      play.catch(() => {
+        this.bgStarted = false;
+      });
+    }
+  }
+
+  setSfx(type, src) {
+    if (this.sfx[type]) return;
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    this.sfx[type] = audio;
   }
 }

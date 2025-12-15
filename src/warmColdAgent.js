@@ -22,7 +22,7 @@ export class WarmColdAgent {
       this.filter.matrix = [
         1.6, 0.1, 0, 0, 0.05,
         0.05, 1.4, 0, 0, 0.02,
-        0, 0, 0.6, 0, 0,
+        0, 0, 0.8, 0, 0,
         0, 0, 0, 1, 0,
       ];
       return;
@@ -41,8 +41,8 @@ export class WarmColdAgent {
 
     // Cold = blue bias, Warm = red/orange bias.
     const mix = (a, b, t) => a + (b - a) * t;
-    const cold = { r: 0.5, g: 0.85, b: 1.6, bias: 0.08 };
-    const warm = { r: 1.6, g: 0.75, b: 0.6, bias: -0.02 };
+    const cold = { r: 1.0, g: 1.05, b: 1.2, bias: 0.05 };
+    const warm = { r: 1.4, g: 0.95, b: 0.85, bias: 0.0 };
 
     const rScale = mix(cold.r, warm.r, warmFactor);
     const gScale = mix(cold.g, warm.g, warmFactor);

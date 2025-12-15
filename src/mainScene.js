@@ -22,6 +22,9 @@ export class MainScene {
     this.warmCold = new WarmColdAgent();
     this.performance = new PerformanceAgent(app);
     this.audio = new AudioAgent();
+    this.audio.setBackground("./assets/audio/cool-hip-hop-loop-275527.mp3");
+    this.audio.setSfx("win", "./assets/audio/win.mp3");
+    this.audio.setSfx("fail", "./assets/audio/gameover.mp3");
     this.timerLowPlayed = false;
     this.isFalling = false;
     this.fallVelocity = 0;
@@ -52,7 +55,7 @@ export class MainScene {
     const bg = new PIXI.Sprite(getTexture("background_main"));
     bg.width = this.app.screen.width;
     bg.height = this.app.screen.height;
-    bg.tint = 0x0f3a24;
+    bg.tint = 0xffffff;
     bg.eventMode = "static";
     bg.cursor = "pointer";
     return bg;
@@ -126,16 +129,17 @@ export class MainScene {
     this.ui.setMessage("U won - ur favourite pet is with u");
     this.hiddenObject.texture = getTexture("hidden_object_win");
     this.hiddenObject.rotation = 0;
+    this.hiddenObject.tint = 0xffffff;
     this.warmCold.setWinMode(true);
-    this.audio.play("success");
+    this.audio.play("win");
     this.startJump();
   }
 
   onFail() {
     if (!this.gameState.setState("fail")) return;
-    this.ui.setMessage("You lost — time's up!");
+    this.ui.setMessage("oh no, u did't catch ur rabbit, so it died bcs of cold");
     this.hiddenObject.texture = getTexture("hidden_object_dead");
-    this.hiddenObject.tint = 0xffffff;
+    this.hiddenObject.tint = 0xff0000;
     this.hiddenObject.rotation = 0;
     this.startFalling();
     this.audio.play("fail");
@@ -218,14 +222,11 @@ export class MainScene {
   updateJump(deltaMs) {
     if (!this.isJumping) return;
     this.jumpElapsed += deltaMs;
-    const t = Math.min(1, this.jumpElapsed / this.jumpDuration);
-    const height = 40;
-    // Simple parabola for hop.
-    const offset = height * 4 * t * (1 - t);
+    const period = 700;
+    const t = (this.jumpElapsed % period) / period;
+    const height = 30;
+    // Looping hop using sine.
+    const offset = Math.sin(t * Math.PI) * height;
     this.hiddenObject.y = this.baseRabbitY - offset;
-    if (t >= 1) {
-      this.isJumping = false;
-      this.hiddenObject.y = this.baseRabbitY;
-    }
   }
 }

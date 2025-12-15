@@ -10,7 +10,7 @@ export async function createApplication(containerId = "game") {
   await app.init({
     resizeTo: mount,
     resolution: window.devicePixelRatio || 1,
-    background: "#0c1224",
+    background: "#1f5f3c",
     antialias: true,
     autoDensity: true,
   });
