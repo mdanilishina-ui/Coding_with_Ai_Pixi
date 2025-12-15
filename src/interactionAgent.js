@@ -5,7 +5,10 @@ export class InteractionAgent {
     this.container = container;
     this.container.eventMode = "static";
     this.container.cursor = "pointer";
-    this.pointerPosition = { x: 0, y: 0 };
+    this.pointerPosition = {
+      x: app.screen.width / 2,
+      y: app.screen.height / 2,
+    };
     this.pointerActive = false;
     this.onPointerMove = () => {};
     this.onPointerTap = () => {};

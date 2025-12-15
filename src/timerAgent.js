@@ -1,5 +1,5 @@
 export class TimerAgent {
-  constructor(durationMs = 20000) {
+  constructor(durationMs = 3000) {
     this.durationMs = durationMs;
     this.remainingMs = durationMs;
     this.running = false;
