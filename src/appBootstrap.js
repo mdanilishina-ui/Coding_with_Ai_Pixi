@@ -8,23 +8,28 @@ export async function createApplication(containerId = "game") {
 
   const app = new PIXI.Application();
   await app.init({
-    resizeTo: window,
+    resizeTo: mount,
     resolution: window.devicePixelRatio || 1,
     background: "#0c1224",
     antialias: true,
+    autoDensity: true,
   });
 
+  // Ensure the canvas fills the mount and matches its size.
   mount.innerHTML = "";
   mount.appendChild(app.canvas);
-  handleResponsiveCanvas(app, mount);
+  fitCanvasToMount(app, mount);
 
   return app;
 }
 
-function handleResponsiveCanvas(app, mount) {
+function fitCanvasToMount(app, mount) {
   const resizeCanvas = () => {
-    const maxWidth = mount.clientWidth;
-    app.renderer.view.style.maxWidth = `${maxWidth}px`;
+    const width = mount.clientWidth || window.innerWidth;
+    const height = mount.clientHeight || window.innerHeight;
+    app.renderer.resize(width, height);
+    app.canvas.style.width = "100%";
+    app.canvas.style.height = "100%";
   };
 
   resizeCanvas();

@@ -25,12 +25,12 @@ export async function loadAssets() {
     PIXI.Assets.add({ alias: asset.alias, src: asset.src });
   });
 
-  const textures = await PIXI.Assets.load(Object.keys(assets).map((key) => assets[key].alias));
-  return textures;
+  // Preload all assets so Texture.from/Assets.get resolve immediately.
+  return PIXI.Assets.load(Object.values(assets).map((asset) => asset.alias));
 }
 
 export function getTexture(alias) {
-  return PIXI.Texture.from(alias);
+  return PIXI.Assets.get(alias) ?? PIXI.Texture.from(alias);
 }
 
 function createSolidDataUrl(color, width, height, label) {

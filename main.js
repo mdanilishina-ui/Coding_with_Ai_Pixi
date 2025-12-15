@@ -8,4 +8,10 @@ import { SceneManagerAgent } from "./src/sceneManager.js";
 
   const sceneManager = new SceneManagerAgent(app);
   sceneManager.start();
+
+  // Expose for quick manual testing from the console.
+  // window.sceneManager.restartGame() will rebuild the scene.
+  if (typeof window !== "undefined") {
+    window.sceneManager = sceneManager;
+  }
 })();

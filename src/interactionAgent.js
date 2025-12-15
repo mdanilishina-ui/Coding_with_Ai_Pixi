@@ -27,4 +27,9 @@ export class InteractionAgent {
   resize(screen) {
     this.container.hitArea = new PIXI.Rectangle(0, 0, screen.width, screen.height);
   }
+
+  destroy() {
+    this.container.removeAllListeners();
+    this.container.hitArea = null;
+  }
 }

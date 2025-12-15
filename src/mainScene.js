@@ -116,4 +116,13 @@ export class MainScene {
     this.interaction.resize(this.app.screen);
     this.ui.layout();
   }
+
+  destroy() {
+    this.app.ticker.remove(this.update, this);
+    this.interaction.destroy();
+    this.ui.destroy();
+    this.container.removeAllListeners();
+    this.container.removeFromParent();
+    this.container.destroy({ children: true, texture: false, baseTexture: false });
+  }
 }

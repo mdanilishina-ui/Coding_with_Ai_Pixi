@@ -20,8 +20,7 @@ export class SceneManagerAgent {
 
   replaceScene(scene) {
     if (this.currentScene) {
-      this.app.stage.removeChild(this.currentScene.container);
-      this.app.ticker.remove(this.currentScene.update, this.currentScene);
+      this.currentScene.destroy();
     }
     this.currentScene = scene;
     this.app.stage.addChild(scene.container);

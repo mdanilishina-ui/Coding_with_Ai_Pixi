@@ -73,4 +73,10 @@ export class UIAgent {
   layout() {
     this.restartButton.position.set(this.app.screen.width - 24, this.app.screen.height - 24);
   }
+
+  destroy() {
+    this.restartButton.removeAllListeners();
+    this.container.removeFromParent();
+    this.container.destroy({ children: true, texture: false, baseTexture: false });
+  }
 }
