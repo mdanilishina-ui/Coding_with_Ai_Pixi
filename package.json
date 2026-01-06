@@ -1,8 +1,14 @@
-{
-  "name": "warm-cold-pixi",
+﻿{
+  "name": "coding-with-ai-pixi",
   "version": "1.0.0",
-  "description": "Single-level Warm & Cold PixiJS prototype served with a tiny local dev server.",
+  "private": true,
+  "description": "Platform shell plus isolated PixiJS game packages served by a tiny local dev server.",
   "type": "module",
+  "workspaces": [
+    "packages/platform",
+    "packages/game-sdk",
+    "packages/games/*"
+  ],
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
@@ -11,7 +17,8 @@
   "keywords": [
     "pixijs",
     "prototype",
-    "warm-cold"
+    "warm-cold",
+    "monorepo"
   ],
   "author": "",
   "license": "ISC"

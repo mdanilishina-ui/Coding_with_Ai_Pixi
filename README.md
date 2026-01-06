@@ -1,17 +1,32 @@
-# Warm & Cold – PixiJS Prototype
+﻿# Coding with AI · Pixi Platform
 
-A single-level PixiJS experience that implements the agent responsibilities defined in `agents.md`. Move the pointer to heat up the background, find the hidden object before the timer expires, and tap the restart chip to try again.
+A tiny monorepo that keeps the shared platform shell beside individual PixiJS games. The server at the repo root serves everything statically so each game package can stay framework-free.
+
+## Repository layout
+```
+packages/
+  platform/        # iframe-based menu + loader shell
+  game-sdk/        # shared GameInterface contract
+  games/
+    warm-cold/     # existing Save the Rabbit experience (HTML/CSS/JS/assets)
+server.js          # lightweight static server (unchanged)
+```
+
+The warm/cold prototype keeps its original logic under `packages/games/warm-cold`. Only the paths changed—no gameplay code was rewritten.
 
 ## Running locally
-1. Install Node.js (no additional dependencies are required).
-2. Start the lightweight static server:
-
+1. Install Node.js if needed.
+2. Start the static server from the repo root:
    ```bash
    npm run dev
    ```
+3. Open `http://localhost:4173/` and you will land on the platform UI (the root `index.html` now redirects to `packages/platform/`).
 
-3. Open the logged URL (defaults to `http://localhost:4173`) in your browser or simulator.
+You can also deep-link directly to `http://localhost:4173/packages/games/warm-cold/` if you want to work on the game outside of the platform shell.
 
-## Customizing
-- Edit `src` modules to adjust game logic (placement, timer, warm/cold effect, UI).
-- Update `styles.css` or `index.html` to tweak the landing layout and copy.
+## Adding a new game package
+1. Copy `packages/games/warm-cold` as a template (or start from scratch) and keep its assets/docs within that folder.
+2. Register the game with the platform loader by editing `packages/platform/main.js` and adding a new entry to the `games` array. Point `entry` to your HTML page and `docs` to the relevant agents file.
+3. (Optional) Implement the `GameInterface` contract from `packages/game-sdk/GameInterface.js` if you plan to expose programmatic mounting instead of the iframe fallback.
+
+With this structure the shared platform can evolve (menus, loaders, SDK hooks) while each game maintains its own dependencies and DOM.

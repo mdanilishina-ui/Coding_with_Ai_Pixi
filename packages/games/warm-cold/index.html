@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Save the Rabbit — Get the rabbit and collect his food, save him from coming winter death from hunger."
+    />
+    <title>Save the Rabbit - PixiJS Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero__content">
+          <p class="eyebrow">Save the Rabbit</p>
+          <h1>Save the Rabbit</h1>
+          <p class="lede">
+            Winter is closing in—get the rabbit and collect his food so you can
+            save him from the coming winter death from hunger. Heat up the scene
+            to reveal clues, grab every carrot, and reunite with your furry
+            friend before the timer runs dry.
+          </p>
+        </div>
+        <div class="hero__canvas">
+          <div id="game" aria-live="polite" aria-label="Save the Rabbit game area"></div>
+          <div class="start-overlay" id="startOverlay">
+            <div class="start-overlay__card">
+              <p class="start-overlay__eyebrow">Ready to play?</p>
+              <h2>Start the rescue</h2>
+              <p class="start-overlay__lede">
+                Get the rabbit and collect his food, save him from coming winter
+                death from hunger.
+              </p>
+              <button id="startButton" class="start-overlay__button">Start Game</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

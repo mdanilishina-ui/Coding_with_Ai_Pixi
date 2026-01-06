@@ -5,6 +5,7 @@ export class AudioAgent {
     this.bg = null;
     this.bgStarted = false;
     this.sfx = {};
+    this.muted = false;
   }
 
   unlock() {
@@ -19,14 +20,15 @@ export class AudioAgent {
     this.unlocked = true;
 
     // Start background loop if configured.
-    this.playBackground();
+    if (!this.muted) {
+      this.playBackground();
+    }
   }
 
   play(type = "success") {
-    if (!this.unlocked) return;
+    if (!this.unlocked || this.muted) return;
     const clip = this.sfx[type];
     if (clip) {
-      this.stopBackground();
       this.stopSfx(type);
       clip.currentTime = 0;
       const playPromise = clip.play();
@@ -69,13 +71,13 @@ export class AudioAgent {
     if (this.bg) return;
     const audio = new Audio(src);
     audio.loop = true;
-    audio.volume = 0.35;
+    audio.volume = 0.18;
     audio.preload = "auto";
     this.bg = audio;
   }
 
   playBackground() {
-    if (!this.bg || this.bgStarted) return;
+    if (!this.bg || this.bgStarted || this.muted) return;
     this.bgStarted = true;
     const play = this.bg.play();
     if (play && typeof play.catch === "function") {
@@ -89,6 +91,9 @@ export class AudioAgent {
     if (this.sfx[type]) return;
     const audio = new Audio(src);
     audio.preload = "auto";
+    if (type === "win") {
+      audio.volume = 0.65;
+    }
     this.sfx[type] = audio;
   }
 
@@ -115,6 +120,22 @@ export class AudioAgent {
   stopAll() {
     this.stopBackground();
     this.stopSfx();
+  }
+
+  setMuted(muted) {
+    const next = Boolean(muted);
+    if (this.muted === next) return this.muted;
+    this.muted = next;
+    if (this.muted) {
+      this.stopAll();
+    } else if (this.unlocked) {
+      this.playBackground();
+    }
+    return this.muted;
+  }
+
+  toggleMute() {
+    return this.setMuted(!this.muted);
   }
 
   destroy() {

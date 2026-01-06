@@ -10,14 +10,22 @@ import { PerformanceAgent } from "./performanceAgent.js";
 import { AudioAgent } from "./audioAgent.js";
 
 export class MainScene {
-  constructor(app, onRestart) {
+  constructor(app, callbacks = {}, config = {}) {
     this.app = app;
-    this.onRestart = onRestart;
+    this.callbacks = callbacks;
+    this.config = {
+      timerMs: config.timerMs ?? 5000,
+      carrotPadding: config.carrotPadding ?? 40,
+      rabbitSpeed: config.rabbitSpeed ?? 70,
+      inventorySpacing: config.inventorySpacing ?? 38,
+      isLastLevel: config.isLastLevel ?? false,
+    };
+
     this.container = new PIXI.Container();
     this.screenSize = { width: app.screen.width, height: app.screen.height };
 
     this.gameState = new GameStateAgent();
-    this.timer = new TimerAgent();
+    this.timer = new TimerAgent(this.config.timerMs);
     this.ui = new UIAgent(app);
     this.warmCold = new WarmColdAgent();
     this.performance = new PerformanceAgent(app);
@@ -32,7 +40,7 @@ export class MainScene {
     this.isJumping = false;
     this.jumpElapsed = 0;
     this.jumpDuration = 500;
-    this.rabbitSpeed = 70;
+    this.rabbitSpeed = this.config.rabbitSpeed;
     this.rabbitDirection = new PIXI.Point(1, 0);
     this.carrotsCollected = 0;
     this.targetCarrots = 3;
@@ -47,6 +55,7 @@ export class MainScene {
     this.container.addChild(this.background, this.flowerLayer, this.hiddenObject, this.ui.container);
     this.background.filters = [this.warmCold.filter];
     this.scatterFlowerField();
+    this.ui.setAudioMuted(this.audio.muted);
 
     this.registerInteractions();
     this.timer.onTimeout = () => this.onFail();
@@ -111,8 +120,14 @@ export class MainScene {
       this.audio.unlock();
       this.handleTap(position);
     };
-    if (this.onRestart) {
-      this.ui.restartButton.on("pointertap", () => this.onRestart());
+    if (this.callbacks.onRestart) {
+      this.ui.restartButton.on("pointertap", () => this.callbacks.onRestart());
+    }
+    if (this.ui.audioToggle) {
+      this.ui.audioToggle.on("pointertap", () => {
+        const muted = this.audio.toggleMute();
+        this.ui.setAudioMuted(muted);
+      });
     }
   }
 
@@ -155,6 +170,7 @@ export class MainScene {
   onSuccess() {
     if (!this.gameState.setState("success")) return;
     this.timer.stop();
+    this.audio.stopBackground();
     this.ui.setMessage("Congratulations, ur pet is with u, full and happy", { centered: true });
     this.hiddenObject.texture = getTexture("hidden_object_win");
     this.hiddenObject.rotation = 0;
@@ -162,6 +178,15 @@ export class MainScene {
     this.warmCold.setWinMode(true);
     this.audio.play("win");
     this.startJump();
+    if (this.callbacks.onLevelComplete) {
+      setTimeout(() => {
+        if (!this.config.isLastLevel) {
+          this.callbacks.onLevelComplete();
+        } else {
+          this.ui.setMessage("Win", { centered: true });
+        }
+      }, 900);
+    }
   }
 
   onFail() {
@@ -171,6 +196,7 @@ export class MainScene {
       message = "Oh no, rabbit died from cold";
     }
     this.ui.setMessage(message, { centered: true });
+    this.audio.stopBackground();
     this.hiddenObject.texture = getTexture("hidden_object_dead");
     this.hiddenObject.tint = 0xff0000;
     this.hiddenObject.rotation = 0;
@@ -178,18 +204,25 @@ export class MainScene {
     this.audio.play("fail");
     this.warmCold.setLossMode(true);
     this.isJumping = false;
+    if (this.callbacks.onFailReset) {
+      setTimeout(() => this.callbacks.onFailReset(), 900);
+    }
   }
 
   onHungerFail() {
     if (this.gameState.state !== "running") return;
     this.gameState.setState("fail");
     this.ui.setMessage("Rabbit died. He doesnt eat sunlight(.", { centered: true });
+    this.audio.stopBackground();
     this.hiddenObject.texture = getTexture("hidden_object_dead");
     this.hiddenObject.tint = 0xff0000;
     this.startFalling();
     this.audio.play("fail");
     this.warmCold.setLossMode(true);
     this.isJumping = false;
+    if (this.callbacks.onFailReset) {
+      setTimeout(() => this.callbacks.onFailReset(), 900);
+    }
   }
 
   update(tickerTime) {
@@ -327,7 +360,7 @@ export class MainScene {
     const placement = new ObjectPlacementAgent(
       { width: this.app.screen.width, height: this.app.screen.height },
       { width: sprite.width, height: sprite.height },
-      40
+      this.config.carrotPadding
     );
     const position = placement.randomPosition();
     sprite.position.copyFrom(position);
@@ -360,7 +393,7 @@ export class MainScene {
     const baseX = this.app.screen.width - 30;
     const baseY = 60;
     this.inventoryCarrots.forEach((carrot, idx) => {
-      carrot.position.set(baseX, baseY + idx * 38);
+      carrot.position.set(baseX, baseY + idx * this.config.inventorySpacing);
       carrot.scale.set(0.5);
     });
   }

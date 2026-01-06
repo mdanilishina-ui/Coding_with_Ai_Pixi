@@ -11,8 +11,9 @@ export class UIAgent {
     this.timerText = this.createTimerText();
     this.timerGroup = this.createTimerGroup();
     this.restartButton = this.createRestartButton();
+    this.audioToggle = this.createAudioToggleButton();
 
-    this.container.addChild(this.label, this.timerGroup, this.restartButton);
+    this.container.addChild(this.label, this.timerGroup, this.restartButton, this.audioToggle);
     this.layout();
   }
 
@@ -101,6 +102,36 @@ export class UIAgent {
     return container;
   }
 
+  createAudioToggleButton() {
+    const container = new PIXI.Container();
+    const width = 136;
+    const height = 42;
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 10);
+    bg.fill({ color: 0x1f2f5d, alpha: 0.85 });
+    bg.stroke({ color: 0x4a5c8a, width: 2, alpha: 0.8 });
+
+    const label = new PIXI.Text({
+      text: "Music: On",
+      style: new PIXI.TextStyle({
+        fill: 0xf8fafc,
+        fontSize: 15,
+        fontWeight: "600",
+        fontFamily: "Montserrat, 'Helvetica Neue', Arial, sans-serif",
+      }),
+    });
+    label.anchor.set(0.5);
+    label.position.set(width / 2, height / 2);
+
+    container.addChild(bg, label);
+    container.eventMode = "static";
+    container.cursor = "pointer";
+    container.alpha = 0.95;
+    this.audioToggleBg = bg;
+    this.audioToggleLabel = label;
+    return container;
+  }
+
   updateTimer(progress, remainingMs, durationMs) {
     const clamped = Math.max(0, Math.min(1, progress));
     this.timerBar.scale.x = clamped;
@@ -141,6 +172,12 @@ export class UIAgent {
       this.app.screen.height - padding - this.restartButtonBg.height
     );
 
+    // Audio toggle bottom-left.
+    this.audioToggle.position.set(
+      padding,
+      this.app.screen.height - padding - this.audioToggleBg.height
+    );
+
     if (this.messageCentered) {
       this.label.position.set(this.app.screen.width / 2, this.app.screen.height / 2);
     } else {
@@ -148,8 +185,15 @@ export class UIAgent {
     }
   }
 
+  setAudioMuted(muted) {
+    if (!this.audioToggleLabel) return;
+    this.audioToggleLabel.text = muted ? "Music: Off" : "Music: On";
+    this.audioToggle.alpha = muted ? 0.7 : 0.95;
+  }
+
   destroy() {
     this.restartButton.removeAllListeners();
+    this.audioToggle?.removeAllListeners();
     this.container.removeFromParent();
     this.container.destroy({ children: true, texture: false, baseTexture: false });
   }
