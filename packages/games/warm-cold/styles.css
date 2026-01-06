@@ -13,27 +13,42 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  width: 100%;
+  height: 100%;
   margin: 0;
-  min-height: 100vh;
+  padding: 0;
+}
+
+html {
+  overflow: hidden;
+}
+
+body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
+  overflow: hidden;
 }
 
 main {
-  display: grid;
-  place-items: center;
-  padding: 48px 24px 64px;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .hero {
+  width: 100%;
+  max-width: none;
   display: grid;
-  gap: 28px;
-  max-width: 1200px;
-  width: min(100%, 1200px);
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 24px;
   align-items: stretch;
+  height: 100%;
 }
 
 .hero__content {
@@ -42,6 +57,9 @@ main {
   border-radius: 18px;
   box-shadow: var(--shadow);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: auto;
+  min-height: 0;
+  max-width: 360px;
 }
 
 .hero__canvas {
@@ -50,17 +68,30 @@ main {
   border-radius: 18px;
   box-shadow: var(--shadow);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  display: grid;
-  place-items: center;
-  min-height: 520px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__content {
+    max-height: 40vh;
+  }
 }
 
 #game {
   width: 100%;
   height: 100%;
-  min-height: 520px;
+  min-height: 0;
 }
 
 h1 {
@@ -96,9 +127,8 @@ code {
 
 canvas {
   display: block;
-  width: min(840px, 70vw);
-  max-width: 100%;
-  height: auto;
+  width: 100% !important;
+  height: 100% !important;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.07);
 }

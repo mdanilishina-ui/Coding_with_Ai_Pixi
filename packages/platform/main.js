@@ -3,7 +3,7 @@ const appRoot = document.getElementById("app");
 const games = [
   {
     id: "warm-cold",
-    name: "Warm & Cold — Save the Rabbit",
+    name: "Warm & Cold - Save the Rabbit",
     description: "Heat up the scene, collect carrots, and rescue the rabbit before time runs out.",
     entry: "../games/warm-cold/index.html",
   },
@@ -12,7 +12,7 @@ const games = [
 const menuTiles = [
   {
     id: "warm-cold",
-    title: "Warm & Cold — Save the Rabbit",
+    title: "Warm & Cold - Save the Rabbit",
     subtitle: "Play now",
     illustration: "rabbit",
     playable: true,
@@ -39,6 +39,17 @@ const ROUTES = {
   playPrefix: "#/play/",
 };
 
+function setBodyRouteState(isPlayRoute) {
+  if (typeof document === "undefined") return;
+  const body = document.body;
+  if (!body) return;
+  if (isPlayRoute) {
+    body.classList.add("route-play");
+  } else {
+    body.classList.remove("route-play");
+  }
+}
+
 function navigateTo(hash) {
   if (window.location.hash === hash) {
     renderRoute();
@@ -51,14 +62,17 @@ function renderRoute() {
   if (!appRoot) return;
 
   if (!window.location.hash) {
+    setBodyRouteState(false);
     window.location.hash = ROUTES.menu;
     return;
   }
 
   const hash = window.location.hash;
+  const isPlayRoute = hash.startsWith(ROUTES.playPrefix);
+  setBodyRouteState(isPlayRoute);
   appRoot.innerHTML = "";
 
-  if (hash.startsWith(ROUTES.playPrefix)) {
+  if (isPlayRoute) {
     const gameId = hash.slice(ROUTES.playPrefix.length);
     renderPlay(appRoot, gameId);
     return;
@@ -95,7 +109,8 @@ function renderMenu(container) {
   grid.className = "menu-grid";
 
   menuTiles.forEach((tile) => {
-    const card = document.createElement(tile.playable ? "button" : "article");
+    const cardTag = tile.playable ? "button" : "article";
+    const card = document.createElement(cardTag);
     card.className = `game-card${tile.playable ? " game-card--playable" : " game-card--disabled"}`;
     card.innerHTML = `
       <div class="game-card__illustration">${getIllustrationMarkup(tile.illustration)}</div>
@@ -106,7 +121,9 @@ function renderMenu(container) {
     `;
 
     if (tile.playable && tile.route) {
-      card.type = "button";
+      if (cardTag === "button") {
+        card.type = "button";
+      }
       card.addEventListener("click", () => navigateTo(tile.route));
     } else {
       card.setAttribute("aria-disabled", "true");
@@ -123,6 +140,7 @@ function renderMenu(container) {
 function renderPlay(container, requestedId) {
   const game = games.find((entry) => entry.id === requestedId) ?? games[0];
   if (!game) {
+    setBodyRouteState(false);
     renderMenu(container);
     return;
   }
@@ -140,7 +158,7 @@ function renderPlay(container, requestedId) {
   const backButton = document.createElement("button");
   backButton.type = "button";
   backButton.className = "back-button";
-  backButton.textContent = "← Back to menu";
+  backButton.textContent = "Back to menu";
   backButton.addEventListener("click", () => navigateTo(ROUTES.menu));
 
   header.innerHTML = `
