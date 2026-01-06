@@ -7,6 +7,12 @@ const games = [
     description: "Heat up the scene, collect carrots, and rescue the rabbit before time runs out.",
     entry: "../games/warm-cold/index.html",
   },
+  {
+    id: "plant-vs-aliens",
+    name: "Plant vs Aliens - Grid Defense",
+    description: "Deploy four plants, collect money, and hold the 8×8 garden against alien waves.",
+    entry: "../games/plant-vs-aliens/index.html",
+  },
 ];
 
 const menuTiles = [
@@ -17,6 +23,14 @@ const menuTiles = [
     illustration: "rabbit",
     playable: true,
     route: "#/play/warm-cold",
+  },
+  {
+    id: "plant-vs-aliens",
+    title: "Plant vs Aliens",
+    subtitle: "Grid defense prototype",
+    illustration: "sprout",
+    playable: true,
+    route: "#/play/plant-vs-aliens",
   },
   {
     id: "coming-soon-1",
@@ -216,6 +230,22 @@ function getIllustrationMarkup(type) {
           <circle cx="90" cy="95" r="6" fill="#1c2340"></circle>
           <path d="M76 112 Q80 120 84 112" fill="none" stroke="#ff80b5" stroke-width="4" stroke-linecap="round"></path>
           <path d="M60 128 Q80 138 100 128" fill="none" stroke="#1c2340" stroke-width="5" stroke-linecap="round"></path>
+        </svg>
+      `;
+    case "sprout":
+      return `
+        <svg viewBox="0 0 160 160" role="img" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="sprout-leaf" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7df0c4"></stop>
+              <stop offset="100%" stop-color="#3ecba1"></stop>
+            </linearGradient>
+          </defs>
+          <rect x="30" y="80" width="100" height="50" rx="25" fill="rgba(125,240,196,0.08)" stroke="#7df0c4" stroke-width="3"></rect>
+          <path d="M80 120 V70" stroke="#7df0c4" stroke-width="6" stroke-linecap="round"></path>
+          <path d="M80 80 C60 40 40 40 30 60 C50 62 66 70 80 80" fill="url(#sprout-leaf)"></path>
+          <path d="M80 80 C100 40 120 40 130 60 C110 62 94 70 80 80" fill="url(#sprout-leaf)"></path>
+          <circle cx="80" cy="116" r="10" fill="#fff" opacity="0.2"></circle>
         </svg>
       `;
     case "question":

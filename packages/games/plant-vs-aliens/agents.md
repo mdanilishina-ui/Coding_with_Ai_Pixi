@@ -1,6 +1,6 @@
 # Plant vs Aliens — Grid Defense Game
 
-This document defines the game design and implementation intent for a grid-based defense game inspired by Plants vs Zombies. It serves as the single source of truth for how the game should behave and what systems it must include.
+This document defines the gameplay rules and systems for a grid-based defense game inspired by Plants vs Zombies. It is the authoritative specification for how the game should behave.
 
 ---
 
@@ -10,35 +10,34 @@ This document defines the game design and implementation intent for a grid-based
 - Playfield: 8×8 grid
 - Aliens spawn from the right side and move left across rows
 - Player places plants on grid tiles to stop aliens
-- Aliens drop money on death
+- Aliens drop money when killed
 - Money is used to place additional plants
-- The player wins by surviving all waves
-- The player loses if any alien reaches the left edge
+- The game progresses in discrete rounds with pauses between them
 
 ---
 
 ## Core Gameplay Loop
 
-1. Game starts with a small amount of money.
-2. Player selects one of four plant types.
-3. Player places plants onto free grid tiles.
-4. Aliens spawn in waves and advance across rows.
-5. Plants attack, block, slow, or generate money.
-6. Aliens attack plants when blocked.
-7. Destroyed aliens drop money.
-8. Difficulty increases over time through waves.
-9. Game ends with a win or loss state.
+1. A round starts.
+2. A fixed number of aliens spawn for that round.
+3. Player defends using plants.
+4. When all aliens are destroyed, the round ends.
+5. The game pauses between rounds.
+6. Player receives bonus money.
+7. Player prepares defenses.
+8. Next round begins with increased difficulty.
 
 ---
 
 ## Grid Rules
 
 - Grid size: 8 rows × 8 columns
-- One plant per tile maximum
-- Aliens move continuously within a single row
-- When an alien reaches a tile containing a plant, it stops and attacks
-- When the plant is destroyed, the alien continues moving
-- Projectiles travel horizontally and hit the first alien in the row
+- One plant per tile
+- Aliens move within a single row
+- Aliens stop to attack when colliding with a plant
+- When a plant is destroyed, aliens continue moving
+- Projectiles move horizontally and hit the first alien in the row
+- Blocking / Queuing: A Wall Plant can only be engaged by one alien at a time. Additional aliens in that row queue up behind the engaged attacker with a small gap, cannot overlap the blocker, and only begin biting once the prior alien (or the plant) is gone.
 
 ---
 
@@ -46,51 +45,54 @@ This document defines the game design and implementation intent for a grid-based
 
 ### 1. Pea Shooter (Basic Damage)
 - Cost: 50
-- HP: 100
-- Fires a projectile every 1.2 seconds
+- HP: 40 _(HP nerfed: 100 → 50 → 40)_
+- Fires every 1.2 seconds
 - Damage: 20
-- Attacks the nearest alien in its row
+- Targets nearest alien in row
 
 ### 2. Sunflower (Economy)
 - Cost: 50
-- HP: 80
-- Generates a money drop (+25) every 8 seconds
-- Money must be collected by the player
+- HP: 32 _(HP nerfed: 80 → 32)_
+- Generates +25 money every 8 seconds
+- Money must be collected
 
 ### 3. Wall Plant (Tank)
 - Cost: 75
-- HP: 400
+- HP: 160 _(HP nerfed: 400 → 160)_
 - No attack
-- Designed to block aliens and absorb damage
+- Blocks alien movement
 
 ### 4. Ice Plant (Slow + Damage)
 - Cost: 100
-- HP: 90
+- HP: 36 _(HP nerfed: 90 → 36)_
 - Fires every 1.8 seconds
 - Damage: 15
-- Applies a slow effect (≈35%) for 2.5 seconds
+- Applies ~35% slow for 2.5 seconds
 
 ---
 
 ## Alien Types (3)
 
 ### 1. Basic Alien
-- HP: 120
+- HP: 96
 - Speed: Normal
-- Damage: 10 per second
+- Damage: 10/sec
 - Reward: 25 money
+- Resistances: None
 
 ### 2. Fast Alien
-- HP: 80
+- HP: 150
 - Speed: Fast
-- Damage: 8 per second
+- Damage: 8/sec
 - Reward: 30 money
+- Resistances: Takes only 60% damage from Pea Shooters but 135% damage from Ice Plant projectiles, so it requires either two Peas or one Ice Plant to drop it in time.
 
 ### 3. Tank Alien
-- HP: 300
+- HP: 320
 - Speed: Slow
-- Damage: 14 per second
+- Damage: 14/sec
 - Reward: 50 money
+- Resistances: Takes only 50% damage from Pea Shooters but 135% damage from Ice Plant projectiles. A single Pea cannot stop it in time; it needs an Ice Plant or multiple damage sources.
 
 ---
 
@@ -100,61 +102,96 @@ This document defines the game design and implementation intent for a grid-based
 - Money sources:
   - Sunflower production
   - Alien death drops
-- Money drops appear on the grid and must be collected
+  - End-of-round bonus (limited)
+- Coin drops spawn exactly where they originate:
+  - Sunflower coins appear centered on their tile.
+  - Alien death coins appear at the alien’s row/column position when it falls.
+  - Coins animate in place until collected and remain clickable during animation.
+- End-of-round bonus:
+  - Player receives **+100 money** for Rounds 1–4 only
+  - Starting Round 5, no bonus money is awarded after clearing a round
 - Money is required to place plants
-- Plant placement is blocked if insufficient money
 
 ---
 
-## Waves & Difficulty
+## Round & Difficulty System
 
-- Total waves: configurable (recommended: 10)
-- Each wave defines:
-  - Duration
-  - Spawn rate
-  - Alien type distribution
-- Early waves favor basic aliens
-- Later waves introduce fast and tank aliens
-- Spawn rows are chosen randomly
-- Aliens spawn from the right side
+- The game progresses in **discrete rounds**
+- No continuous spawning
+- Aliens spawn only at the start (or evenly during) a round
+- Between rounds, the game enters a **pause / build phase**
+
+### Round Progression Rules
+
+- Round 1: 2 aliens total
+- Each subsequent round:
+  - Alien count increases by **+3** compared to the previous round
+- Example:
+  - Round 1 → 2 aliens
+  - Round 2 → 5 aliens
+  - Round 3 → 8 aliens
+  - Round 4 → 11 aliens
+- Alien types are mixed progressively:
+  - Early rounds: mostly basic
+  - Later rounds: introduce fast, then tank aliens
+- Aliens may **not** all spawn at once. They must appear gradually across the active round.
+- A maximum of **3 aliens can be in the act of spawning simultaneously**. New spawns must wait until earlier spawns finish entering the board (or an open slot becomes free).
+- Spawning continues in batches until the total alien count for the round is reached.
+
+### Between-Round Phase
+
+- Aliens do not spawn
+- Player can:
+  - Place plants
+  - Collect leftover money drops
+  - Strategically prepare defenses
+- A “Start Next Round” button (or countdown) begins the next wave
 
 ---
 
 ## Win / Lose Conditions
 
-- Win: All waves completed and no aliens remain
+- Win: All planned rounds completed
 - Lose: Any alien reaches the left edge of the grid
 
 ---
 
 ## UI Requirements
 
-- Money display
-- Current wave indicator
-- Plant selection bar with cost and cooldown
-- Tile highlight when placing plants
-- Feedback for invalid placement
-- Win screen with restart option
-- Lose screen with restart option
+- Money counter
+- Current round indicator
+- Plant selection bar with costs and cooldowns
+  - Plant cards use a blue base color.
+  - When the player can afford a plant, the bottom strip of that card turns yellow as an affordability indicator.
+- Tile highlight during placement
+- Between-round overlay (e.g. “Prepare Your Defense”)
+- Win screen with restart
+- Lose screen with restart
+- All UI text renders in Montserrat (black text).
+- Every interactive button (plant cards, round controls, restart, etc.) has a crisp black outline.
 
 ---
 
-## Visual Style (Initial)
+## Visual Style & Animation
 
-- Placeholder graphics are acceptable
-- Plants: simple shapes or icons
-- Aliens: simple shapes with visual distinction
-- Projectiles: small moving elements
-- Money drops: clear, clickable indicators
+- Placeholder visuals are **not** acceptable for plants or aliens once pixel assets ship.
+- All **plants** must use higher-resolution retro pixel-art sprites (more pixels per sprite than earlier prototypes) with a looping idle animation (at least 2 frames) so they appear alive even while waiting.
+- All **aliens** must also use higher-resolution pixel sprites with visible animation (idle and/or walk). They should feel in motion while advancing.
+- Alien art must clearly scale with toughness:
+  - Low-HP aliens use the smallest silhouettes, simple rounded forms, and calmer colors to feel least threatening.
+  - Mid-HP aliens grow larger with sharper outlines/armor details to signal higher danger.
+  - High-HP aliens are the largest, most aggressive silhouettes (spikes, armor, brighter warning colors) so their toughness is obvious at a glance.
+- The battlefield background is a green garden scene with subtle pixel grass details to reinforce the setting.
+- UI, overlays, and projectiles may still rely on placeholder treatments as needed, but characters (plants + aliens) must adhere to the pixel-art + animation rules above.
 
 ---
 
 ## Technical Intent
 
-- The game should be modular and system-driven
-- Systems should handle grid logic, combat, economy, waves, UI, and state
-- Files and structure may be freely created as needed
-- This document defines behavior, not implementation constraints
+- Modular, system-based architecture
+- Separate systems for grid, combat, economy, rounds, UI, and state
+- No constraints on file or folder structure
+- This document defines behavior, not implementation
 
 ---
 

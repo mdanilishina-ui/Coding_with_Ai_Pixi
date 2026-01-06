@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Defend the garden from waves of aliens in an 8x8 tactical grid prototype."
+    />
+    <title>Plant vs Aliens - Grid Defense Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">Plant vs Aliens</p>
+          <h1>Grid Defense Prototype</h1>
+          <p class="lede">
+            Deploy four unique plants, collect money, and hold the 8×8 garden
+            against escalating alien rounds. Placeholder visuals keep the focus on
+            clarity and mechanics.
+          </p>
+          <ul class="spec-list">
+            <li>Real-time waves</li>
+            <li>Economy management</li>
+            <li>Win or lose feedback</li>
+          </ul>
+        </div>
+        <div class="hero__game">
+          <div class="hud">
+            <div class="hud__stat">
+              <span>Money</span>
+              <strong id="moneyDisplay">100</strong>
+            </div>
+            <div class="hud__stat">
+              <span>Round</span>
+              <strong id="roundDisplay">0 / 0</strong>
+            </div>
+            <div class="hud__stat">
+              <span>Status</span>
+              <strong id="statusDisplay">Preparing...</strong>
+            </div>
+          </div>
+
+          <div class="plant-bar" id="plantBar" aria-label="Plant selection"></div>
+          <p class="hint" id="message"></p>
+
+          <div class="board-wrapper">
+            <div
+              id="board"
+              class="board"
+              role="grid"
+              aria-live="polite"
+              aria-label="8 by 8 defense grid"
+            ></div>
+            <div class="overlay overlay--round" id="roundOverlay" hidden>
+              <div class="overlay__card round-card">
+                <p class="overlay__eyebrow">Build phase</p>
+                <h2 id="roundTitle">Prepare your defense</h2>
+                <p id="roundSubtitle">Round details will appear here.</p>
+                <button id="roundButton" class="overlay__button">Start Round</button>
+              </div>
+            </div>
+            <div class="overlay" id="endOverlay" hidden>
+              <div class="overlay__card">
+                <p class="overlay__eyebrow" id="endEyebrow">Game Over</p>
+                <h2 id="endTitle">Aliens Breached the Garden</h2>
+                <p id="endSubtitle">Try to clear every round.</p>
+                <button id="restartButton" class="overlay__button">Restart</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
