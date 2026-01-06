@@ -17,6 +17,10 @@ const assets = {
     alias: "hidden_object_dead",
     src: createRabbitDeadDataUrl(),
   },
+  carrot: {
+    alias: "carrot",
+    src: createCarrotDataUrl(),
+  },
   timerBar: {
     alias: "ui_timer_bar",
     src: createSolidDataUrl("#7df0c4", 400, 32, "Timer"),
@@ -157,6 +161,19 @@ function createRabbitDeadDataUrl() {
     <rect x="5" y="11" width="6" height="1" fill="#f2cdcd"/>
     <rect x="4" y="12" width="8" height="1" fill="#1f1d2e"/>
     <rect x="5" y="12" width="6" height="1" fill="#f2cdcd"/>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function createCarrotDataUrl() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect width="16" height="16" fill="none"/>
+    <rect x="7" y="1" width="2" height="2" fill="#83c91a"/>
+    <rect x="6" y="2" width="4" height="2" fill="#83c91a"/>
+    <rect x="5" y="3" width="6" height="1" fill="#6fb013"/>
+    <rect x="5" y="4" width="6" height="8" fill="#f58835"/>
+    <rect x="6" y="12" width="4" height="1" fill="#e0621f"/>
+    <rect x="7" y="13" width="2" height="1" fill="#e0621f"/>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }

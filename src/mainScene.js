@@ -25,24 +25,36 @@ export class MainScene {
     this.audio.setBackground("./assets/audio/bg.music.mp3");
     this.audio.setSfx("win", "./assets/audio/win.mp3");
     this.audio.setSfx("fail", "./assets/audio/gameover.mp3");
+    this.audio.setSfx("pickup", "./assets/audio/pickup.mp3");
     this.timerLowPlayed = false;
     this.isFalling = false;
     this.fallVelocity = 0;
     this.isJumping = false;
     this.jumpElapsed = 0;
     this.jumpDuration = 500;
+    this.rabbitSpeed = 70;
+    this.rabbitDirection = new PIXI.Point(1, 0);
+    this.carrotsCollected = 0;
+    this.targetCarrots = 3;
+    this.carrots = [];
+    this.inventoryCarrots = [];
 
     this.background = this.createBackground();
+    this.flowerLayer = new PIXI.Container();
     this.hiddenObject = this.createHiddenObject();
     this.interaction = new InteractionAgent(this.container, this.app);
 
-    this.container.addChild(this.background, this.hiddenObject, this.ui.container);
+    this.container.addChild(this.background, this.flowerLayer, this.hiddenObject, this.ui.container);
     this.background.filters = [this.warmCold.filter];
+    this.scatterFlowerField();
 
     this.registerInteractions();
     this.timer.onTimeout = () => this.onFail();
     this.gameState.setState("running");
     this.timer.start();
+    this.spawnInitialCarrots();
+    this.rabbitCaught = false;
+    this.ui.setMessage("Collect 3 carrots, then catch the rabbit");
     // Seed initial warmth state (cold start).
     this.warmCold.update(
       { x: this.app.screen.width / 2, y: this.app.screen.height / 2 },
@@ -66,6 +78,7 @@ export class MainScene {
     hidden.anchor.set(0.5);
     hidden.scale.set(0.4);
     this.placeHiddenObject(hidden);
+    this.randomizeRabbitDirection();
     return hidden;
   }
 
@@ -82,6 +95,11 @@ export class MainScene {
     sprite.alpha = 1;
     this.isFalling = false;
     this.isJumping = false;
+  }
+
+  randomizeRabbitDirection() {
+    const angle = Math.random() * Math.PI * 2;
+    this.rabbitDirection.set(Math.cos(angle), Math.sin(angle));
   }
 
   registerInteractions() {
@@ -105,12 +123,23 @@ export class MainScene {
 
   handleTap(position) {
     if (this.gameState.state !== "running") return;
+    const tappedCarrot = this.carrots.find((c) => c && this.pointInBounds(position, c.getBounds()));
+    if (tappedCarrot) {
+      this.collectCarrot(tappedCarrot);
+      return;
+    }
     const bounds = this.hiddenObject.getBounds();
     if (this.pointInBounds(position, bounds)) {
-      this.onSuccess();
+      this.rabbitCaught = true;
+      if (this.carrotsCollected >= this.targetCarrots) {
+        this.onSuccess();
+      } else {
+        this.onHungerFail();
+      }
     } else {
-      // Wrong click: rabbit jumps to a new random spot.
-      this.placeHiddenObject(this.hiddenObject);
+      // Wrong click: reposition carrots and speed up rabbit, leave flowers.
+      this.relocateCarrots();
+      this.boostRabbitSpeed();
     }
   }
 
@@ -126,7 +155,7 @@ export class MainScene {
   onSuccess() {
     if (!this.gameState.setState("success")) return;
     this.timer.stop();
-    this.ui.setMessage("U won - ur favourite pet is with u");
+    this.ui.setMessage("Congratulations, ur pet is with u, full and happy", { centered: true });
     this.hiddenObject.texture = getTexture("hidden_object_win");
     this.hiddenObject.rotation = 0;
     this.hiddenObject.tint = 0xffffff;
@@ -137,10 +166,26 @@ export class MainScene {
 
   onFail() {
     if (!this.gameState.setState("fail")) return;
-    this.ui.setMessage("oh no, u did't catch ur rabbit, so it died bcs of cold");
+    let message = "I see, u don't like animals";
+    if (this.carrotsCollected >= this.targetCarrots && !this.rabbitCaught) {
+      message = "Oh no, rabbit died from cold";
+    }
+    this.ui.setMessage(message, { centered: true });
     this.hiddenObject.texture = getTexture("hidden_object_dead");
     this.hiddenObject.tint = 0xff0000;
     this.hiddenObject.rotation = 0;
+    this.startFalling();
+    this.audio.play("fail");
+    this.warmCold.setLossMode(true);
+    this.isJumping = false;
+  }
+
+  onHungerFail() {
+    if (this.gameState.state !== "running") return;
+    this.gameState.setState("fail");
+    this.ui.setMessage("Rabbit died. He doesnt eat sunlight(.", { centered: true });
+    this.hiddenObject.texture = getTexture("hidden_object_dead");
+    this.hiddenObject.tint = 0xff0000;
     this.startFalling();
     this.audio.play("fail");
     this.warmCold.setLossMode(true);
@@ -163,6 +208,8 @@ export class MainScene {
     this.maybeWarnTimer(progress);
     // Continuously update warmth with the last known pointer position.
     this.warmCold.update(this.interaction.pointerPosition, this.hiddenObject.position);
+    this.updateRabbit(deltaMs);
+    this.updateCarrotVisibility();
     this.updateFall(deltaMs);
     this.updateJump(deltaMs);
     this.ui.layout();
@@ -179,6 +226,7 @@ export class MainScene {
     this.background.height = height;
     this.interaction.resize(this.app.screen);
     this.ui.layout();
+    this.layoutInventory();
   }
 
   maybeWarnTimer(progress) {
@@ -196,6 +244,7 @@ export class MainScene {
     this.interaction.destroy();
     this.ui.destroy();
     this.audio.destroy();
+    this.clearCarrots();
     this.container.removeAllListeners();
     this.container.removeFromParent();
     this.container.destroy({ children: true, texture: false, baseTexture: false });
@@ -218,6 +267,7 @@ export class MainScene {
   startJump() {
     this.isJumping = true;
     this.jumpElapsed = 0;
+    this.baseRabbitY = this.hiddenObject.y;
   }
 
   updateJump(deltaMs) {
@@ -229,5 +279,158 @@ export class MainScene {
     // Looping hop using sine.
     const offset = Math.sin(t * Math.PI) * height;
     this.hiddenObject.y = this.baseRabbitY - offset;
+  }
+
+  updateRabbit(deltaMs) {
+    if (this.isFalling) return;
+    const dt = deltaMs / 1000;
+    this.hiddenObject.x += this.rabbitDirection.x * this.rabbitSpeed * dt;
+    this.hiddenObject.y += this.rabbitDirection.y * this.rabbitSpeed * dt;
+    // Bounce on edges.
+    const padding = 24;
+    if (this.hiddenObject.x < padding || this.hiddenObject.x > this.app.screen.width - padding) {
+      this.rabbitDirection.x *= -1;
+      this.hiddenObject.x = Math.min(
+        Math.max(this.hiddenObject.x, padding),
+        this.app.screen.width - padding
+      );
+    }
+    if (this.hiddenObject.y < padding || this.hiddenObject.y > this.app.screen.height - padding) {
+      this.rabbitDirection.y *= -1;
+      this.hiddenObject.y = Math.min(
+        Math.max(this.hiddenObject.y, padding),
+        this.app.screen.height - padding
+      );
+      this.baseRabbitY = this.hiddenObject.y;
+    }
+  }
+
+  boostRabbitSpeed() {
+    this.rabbitSpeed = Math.min(this.rabbitSpeed * 1.1, 240);
+    this.randomizeRabbitDirection();
+  }
+
+  spawnInitialCarrots() {
+    this.clearCarrots();
+    for (let i = 0; i < this.targetCarrots; i++) {
+      const carrot = new PIXI.Sprite(getTexture("carrot"));
+      carrot.anchor.set(0.5);
+      carrot.scale.set(0.6);
+      this.carrots.push(carrot);
+      this.container.addChild(carrot);
+      this.placeCarrot(carrot);
+    }
+    this.layoutInventory();
+  }
+
+  placeCarrot(sprite) {
+    const placement = new ObjectPlacementAgent(
+      { width: this.app.screen.width, height: this.app.screen.height },
+      { width: sprite.width, height: sprite.height },
+      40
+    );
+    const position = placement.randomPosition();
+    sprite.position.copyFrom(position);
+  }
+
+  collectCarrot(carrot) {
+    this.carrotsCollected += 1;
+    this.addFlowerPatch(carrot.position);
+    this.moveCarrotToInventory(carrot);
+    this.ui.setMessage(
+      this.carrotsCollected >= this.targetCarrots
+        ? "Now catch the rabbit!"
+        : `Carrots: ${this.carrotsCollected}/${this.targetCarrots}`
+    );
+    this.audio.play("pickup");
+  }
+
+  moveCarrotToInventory(carrot) {
+    const idx = this.carrots.indexOf(carrot);
+    if (idx !== -1) {
+      this.carrots.splice(idx, 1);
+    }
+    this.container.removeChild(carrot);
+    this.inventoryCarrots.push(carrot);
+    this.container.addChild(carrot);
+    this.layoutInventory();
+  }
+
+  layoutInventory() {
+    const baseX = this.app.screen.width - 30;
+    const baseY = 60;
+    this.inventoryCarrots.forEach((carrot, idx) => {
+      carrot.position.set(baseX, baseY + idx * 38);
+      carrot.scale.set(0.5);
+    });
+  }
+
+  relocateCarrots() {
+    this.carrots.forEach((carrot) => {
+      if (carrot) {
+        this.addFlowerPatch(carrot.position);
+        this.placeCarrot(carrot);
+      }
+    });
+  }
+
+  updateCarrotVisibility() {
+    this.carrots.forEach((carrot) => {
+      if (carrot) {
+        carrot.visible = this.gameState.state === "running";
+      }
+    });
+    this.inventoryCarrots.forEach((carrot) => {
+      carrot.visible = true;
+    });
+  }
+
+  addFlowerPatch(position) {
+    const g = this.createFlowerGraphic();
+    g.position.copyFrom(position);
+    this.flowerLayer.addChild(g);
+  }
+
+  clearCarrots() {
+    [...this.carrots, ...this.inventoryCarrots].forEach((c) => {
+      if (c && c.destroy) c.destroy();
+    });
+    this.carrots = [];
+    this.inventoryCarrots = [];
+  }
+
+  scatterFlowerField() {
+    const count = 25;
+    for (let i = 0; i < count; i++) {
+      const g = this.createFlowerGraphic();
+      g.position.set(
+        Math.random() * this.app.screen.width,
+        Math.random() * this.app.screen.height
+      );
+      this.flowerLayer.addChild(g);
+    }
+  }
+
+  createFlowerGraphic() {
+    const g = new PIXI.Graphics();
+    const petal = 6;
+    g.circle(-petal, 0, 3).fill(0xf8fafc);
+    g.circle(petal, 0, 3).fill(0xf8fafc);
+    g.circle(0, -petal, 3).fill(0xf8fafc);
+    g.circle(0, petal, 3).fill(0xf8fafc);
+    g.circle(0, 0, 3).fill(0xffd166);
+    g.alpha = 0.9;
+    return g;
+  }
+
+  destroy() {
+    this.app.ticker.remove(this.update, this);
+    this.interaction.destroy();
+    this.ui.destroy();
+    this.audio.destroy();
+    this.clearCarrots();
+    this.container.removeAllListeners();
+    this.container.removeFromParent();
+    this.container.destroy({ children: true, texture: false, baseTexture: false });
   }
 }

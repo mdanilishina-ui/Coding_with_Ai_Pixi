@@ -5,6 +5,7 @@ export class UIAgent {
   constructor(app) {
     this.app = app;
     this.container = new PIXI.Container();
+    this.messageCentered = false;
     this.label = this.createLabel();
     this.timerBar = this.createTimerBar();
     this.timerText = this.createTimerText();
@@ -118,8 +119,15 @@ export class UIAgent {
     }
   }
 
-  setMessage(text) {
+  setMessage(text, { centered = false } = {}) {
+    this.messageCentered = centered;
+    if (centered) {
+      this.label.anchor.set(0.5);
+    } else {
+      this.label.anchor.set(0, 0.5);
+    }
     this.label.text = text;
+    this.layout();
   }
 
   layout() {
@@ -132,6 +140,12 @@ export class UIAgent {
       this.app.screen.width - padding - this.restartButtonBg.width,
       this.app.screen.height - padding - this.restartButtonBg.height
     );
+
+    if (this.messageCentered) {
+      this.label.position.set(this.app.screen.width / 2, this.app.screen.height / 2);
+    } else {
+      this.label.position.set(24, 32);
+    }
   }
 
   destroy() {
