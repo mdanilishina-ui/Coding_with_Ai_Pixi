@@ -57,6 +57,10 @@ export class Grid {
     }
   }
 
+  refreshTileSize() {
+    this._updateTileSize();
+  }
+
   highlightTile(row, col, enabled) {
     const tile = this.tiles[row]?.[col];
     if (!tile) return;

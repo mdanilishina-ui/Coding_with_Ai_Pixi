@@ -20,11 +20,20 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   background: #08240e;
   color: #050505;
+}
+
+body.embedded {
+  overflow: hidden;
 }
 
 body::before,
@@ -63,6 +72,13 @@ body::after {
   position: relative;
 }
 
+body.embedded .page {
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  height: 100%;
+}
+
 .page::before {
   content: "";
   position: absolute;
@@ -85,8 +101,18 @@ body::after {
   gap: 32px;
 }
 
+body.embedded .hero {
+  height: 100%;
+  align-items: stretch;
+  min-height: 0;
+}
+
 .hero__copy {
   flex: 1 1 320px;
+}
+
+body.embedded .hero__copy {
+  display: none;
 }
 
 .hero__copy h1 {
@@ -133,12 +159,30 @@ body::after {
   box-shadow: 0 10px 30px rgba(6, 37, 18, 0.35);
 }
 
+body.embedded .hero__game {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
 .hud {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+
+body.embedded .hud {
+  margin-bottom: 8px;
 }
 
 .hud__stat {
@@ -168,6 +212,10 @@ body::after {
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
+}
+
+body.embedded .plant-bar {
+  margin-bottom: 8px;
 }
 
 .plant-card {
@@ -233,6 +281,15 @@ body::after {
   position: relative;
   overflow: hidden;
   border-radius: 18px;
+}
+
+body.embedded .board-wrapper {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .board {
@@ -458,7 +515,7 @@ button,
 }
 
 @media (max-width: 820px) {
-  .board {
+  body:not(.embedded) .board {
     --tile-size: 52px;
   }
 }

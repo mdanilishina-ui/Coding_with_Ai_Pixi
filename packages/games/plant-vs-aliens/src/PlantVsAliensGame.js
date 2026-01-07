@@ -11,6 +11,7 @@ import { PlantBar } from "./PlantBar.js";
 import { RoundManager } from "./RoundManager.js";
 import { uid, clamp, pickByWeight } from "./utils.js";
 import { createPlantSprite, createAlienSprite } from "./spriteFactory.js";
+import { LayoutManager } from "./LayoutManager.js";
 
 const PROJECTILE_SPEED = 6; // tiles per second
 const ALIEN_WIDTH = 0.85; // tiles
@@ -53,6 +54,14 @@ export class PlantVsAliensGame {
     this.resetGridState();
     this.bindRestart();
     this.bindRoundButton();
+    this.layoutManager = new LayoutManager({
+      container: ui.layoutRoot,
+      boardWrapper: ui.boardWrapper,
+      board: ui.board,
+      rows: GRID_ROWS,
+      cols: GRID_COLS,
+      onResize: () => this.handleResize(),
+    });
   }
 
   bindRestart() {
@@ -104,6 +113,14 @@ export class PlantVsAliensGame {
     this.lastTime = 0;
     this.running = true;
     this.loopHandle = requestAnimationFrame((time) => this.loop(time));
+  }
+
+  handleResize() {
+    this.grid.refreshTileSize();
+    this.plants.forEach((plant) => this.positionPlantElement(plant));
+    this.aliens.forEach((alien) => this.positionAlien(alien));
+    this.projectiles.forEach((projectile) => this.positionProjectile(projectile));
+    this.moneyDrops.forEach((drop) => this.positionMoneyDrop(drop));
   }
 
   enterBuildPhase() {

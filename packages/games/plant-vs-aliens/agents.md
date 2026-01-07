@@ -170,6 +170,13 @@ This document defines the gameplay rules and systems for a grid-based defense ga
 - All UI text renders in Montserrat (black text).
 - Every interactive button (plant cards, round controls, restart, etc.) has a crisp black outline.
 
+## Desktop Web Layout
+
+- The playable game fills the platform stage/viewport without scrollbars.
+- Layout responds to the container size on load and resize (not hardcoded window sizes).
+- The 8x8 grid uses most of the available space and stays readable.
+- UI bars and overlays relayout to stay aligned and clickable on desktop.
+
 ---
 
 ## Visual Style & Animation

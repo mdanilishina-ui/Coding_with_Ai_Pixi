@@ -1,6 +1,20 @@
 import { PlantVsAliensGame } from "./src/PlantVsAliensGame.js";
 
+const isEmbedded = (() => {
+  try {
+    return window.self !== window.top;
+  } catch (error) {
+    return true;
+  }
+})();
+
+if (typeof document !== "undefined" && isEmbedded) {
+  document.body.classList.add("embedded");
+}
+
 const ui = {
+  layoutRoot: document.getElementById("gameShell") || document.body,
+  boardWrapper: document.getElementById("boardWrapper"),
   board: document.getElementById("board"),
   plantBar: document.getElementById("plantBar"),
   message: document.getElementById("message"),
