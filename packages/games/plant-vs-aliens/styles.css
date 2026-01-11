@@ -382,12 +382,12 @@ body.embedded .board-wrapper {
 
 .alien--boss {
   filter: drop-shadow(0 8px 16px rgba(128, 16, 16, 0.6));
-  animation: boss-breathe 1.6s ease-in-out infinite;
 }
 
 .alien--boss .pixel-sprite {
   width: 145%;
   height: 145%;
+  animation: boss-breathe 1.6s ease-in-out infinite;
 }
 
 .alien--boss10 .pixel-sprite {
