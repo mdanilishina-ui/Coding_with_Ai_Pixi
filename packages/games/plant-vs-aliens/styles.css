@@ -187,7 +187,7 @@ body.embedded .hud {
 
 .hud__stat {
   flex: 1 1 120px;
-  background: rgba(13, 76, 166, 0.08);
+  background: #ffffff;
   border-radius: 16px;
   padding: 12px;
   border: 1px solid rgba(5, 5, 5, 0.2);
@@ -380,6 +380,21 @@ body.embedded .board-wrapper {
   height: 115%;
 }
 
+.alien--boss {
+  filter: drop-shadow(0 8px 16px rgba(128, 16, 16, 0.6));
+  animation: boss-breathe 1.6s ease-in-out infinite;
+}
+
+.alien--boss .pixel-sprite {
+  width: 145%;
+  height: 145%;
+}
+
+.alien--boss10 .pixel-sprite {
+  width: 165%;
+  height: 165%;
+}
+
 .projectile {
   position: absolute;
   width: 12px;
@@ -463,6 +478,37 @@ body.embedded .board-wrapper {
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
 }
 
+.boss-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  border-radius: 999px;
+  border: 2px solid #000;
+  padding: 6px 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.boss-banner--warning {
+  background: #ffe28a;
+  color: #2a1a05;
+}
+
+.boss-banner--telegraph {
+  background: var(--warning);
+  color: #fff8f0;
+  animation: boss-pulse 0.6s ease-in-out infinite;
+}
+
+.board--boom {
+  animation: board-boom 0.45s ease-out;
+}
+
 .overlay__card {
   background: rgba(255, 255, 255, 0.93);
   border-radius: 20px;
@@ -511,6 +557,45 @@ button,
   }
   100% {
     transform: rotateY(360deg) scaleX(1);
+  }
+}
+
+@keyframes boss-pulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes boss-breathe {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes board-boom {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.01);
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
   }
 }
 

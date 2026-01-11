@@ -25,6 +25,8 @@ const ui = {
   roundTitle: document.getElementById("roundTitle"),
   roundSubtitle: document.getElementById("roundSubtitle"),
   roundButton: document.getElementById("roundButton"),
+  bossBanner: document.getElementById("bossBanner"),
+  bossBannerText: document.getElementById("bossBannerText"),
   endOverlay: document.getElementById("endOverlay"),
   endTitle: document.getElementById("endTitle"),
   endSubtitle: document.getElementById("endSubtitle"),

@@ -389,6 +389,7 @@ export function createPlantSprite(type) {
 }
 
 export function createAlienSprite(type) {
-  const def = ALIEN_SPRITES[type] ?? ALIEN_SPRITES.basic;
+  const resolvedType = type === "boss5" || type === "boss10" ? "tank" : type;
+  const def = ALIEN_SPRITES[resolvedType] ?? ALIEN_SPRITES.basic;
   return createAnimator(def);
 }

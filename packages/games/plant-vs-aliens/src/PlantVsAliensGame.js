@@ -19,6 +19,41 @@ const ROUND_SPAWN_INTERVAL = 1100; // ms
 const MAX_ACTIVE_ALIENS = 3;
 const QUEUE_SPACING = 0.12; // tiles between queued aliens
 const DEBUG_COIN_SPAWN = false;
+const BOSS_ROUNDS = new Map([
+  [
+    5,
+    {
+      kind: "boss5",
+      label: "Mini-boss",
+      hpMultiplier: 1.6,
+      rewardMultiplier: 2.2,
+      speedMultiplier: 0.5,
+      triggerFront: GRID_COLS - 0.1,
+      telegraphFront: GRID_COLS + 0.4,
+      patterns: {
+        front: 0.4,
+        walls: 0.2,
+        sun: 0.2,
+        frontWalls: 0.2,
+      },
+    },
+  ],
+  [
+    10,
+    {
+      kind: "boss10",
+      label: "Boss",
+      hpMultiplier: 2.6,
+      rewardMultiplier: 3.2,
+      speedMultiplier: 0.45,
+      triggerFront: GRID_COLS - 0.1,
+      telegraphFront: GRID_COLS + 0.4,
+      ultimates: {
+        half: 1,
+      },
+    },
+  ],
+]);
 
 export class PlantVsAliensGame {
   constructor(ui) {
@@ -50,6 +85,7 @@ export class PlantVsAliensGame {
     this.remainingToSpawn = 0;
     this.spawnTimer = 0;
     this.currentSpawnWeights = { basic: 1 };
+    this.bossBannerTimer = 0;
 
     this.resetGridState();
     this.bindRestart();
@@ -97,6 +133,8 @@ export class PlantVsAliensGame {
     this.remainingToSpawn = 0;
     this.spawnTimer = 0;
     this.currentSpawnWeights = { basic: 1 };
+    this.bossBannerTimer = 0;
+    this.hideBossBanner();
     if (this.ui.endOverlay) {
       this.ui.endOverlay.hidden = true;
     }
@@ -152,6 +190,10 @@ export class PlantVsAliensGame {
     this.remainingToSpawn = info.totalAliens;
     this.spawnTimer = ROUND_SPAWN_INTERVAL;
     this.currentSpawnWeights = info.weights;
+    if (this.spawnBossForRound(info.round)) {
+      this.remainingToSpawn = 0;
+      this.currentSpawnWeights = {};
+    }
     if (this.ui.roundOverlay) {
       this.ui.roundOverlay.hidden = true;
     }
@@ -313,8 +355,10 @@ export class PlantVsAliensGame {
     this.updateRoundSpawns(deltaMs);
     this.updatePlants(timestamp, deltaSeconds, deltaMs);
     this.updateAliens(deltaSeconds, deltaMs);
+    this.updateBossAbilities(deltaMs);
     this.updateProjectiles(deltaSeconds);
     this.updateMoneyDrops(deltaMs);
+    this.updateBossBanner(deltaMs);
     this.plantBar.updateAvailability(this.money);
     this.checkRoundCompletion();
 
@@ -444,8 +488,14 @@ export class PlantVsAliensGame {
 
   createAlienVisual(type) {
     const el = document.createElement("div");
-    const variant =
-      type === "fast" ? "alien alien--fast" : type === "tank" ? "alien alien--tank" : "alien";
+    const variant = (() => {
+      if (type === "boss5" || type === "boss10") {
+        return `alien alien--boss${type === "boss10" ? " alien--boss10" : ""}`;
+      }
+      if (type === "fast") return "alien alien--fast";
+      if (type === "tank") return "alien alien--tank";
+      return "alien";
+    })();
     el.className = `entity ${variant}`;
     const sprite = createAlienSprite(type);
     el.appendChild(sprite.element);
@@ -625,6 +675,207 @@ export class PlantVsAliensGame {
     this.gridState[plant.row][plant.col] = null;
     this.plants.delete(plant.id);
     plant.element.remove();
+  }
+
+  spawnBossForRound(round) {
+    const bossConfig = BOSS_ROUNDS.get(round);
+    if (!bossConfig) return false;
+    this.clearAliens();
+    const base = ALIEN_TYPES.tank;
+    const row = Math.floor(Math.random() * GRID_ROWS);
+    const visuals = this.createAlienVisual(bossConfig.kind);
+    const boss = {
+      id: uid("alien"),
+      type: bossConfig.kind,
+      row,
+      front: GRID_COLS + ALIEN_WIDTH,
+      hp: Math.round(base.hp * bossConfig.hpMultiplier),
+      damagePerSecond: base.damagePerSecond,
+      baseSpeed: base.speed,
+      reward: Math.round(base.reward * bossConfig.rewardMultiplier),
+      slowUntil: 0,
+      slowPercent: 0,
+      engagingPlantId: null,
+      resistances: base.resistances || null,
+      element: visuals.element,
+      animator: visuals.animator,
+      isBoss: true,
+      bossAbility: {
+        kind: bossConfig.kind,
+        elapsedMs: 0,
+        triggerFront: bossConfig.triggerFront,
+        telegraphFront: bossConfig.telegraphFront,
+        telegraphed: false,
+        fired: false,
+        pattern: bossConfig.patterns ? pickByWeight(bossConfig.patterns) : null,
+        ultimate: bossConfig.ultimates ? pickByWeight(bossConfig.ultimates) : null,
+      },
+    };
+    boss.baseSpeed = base.speed * (bossConfig.speedMultiplier ?? 1);
+    this.aliens.push(boss);
+    this.boardElement.appendChild(boss.element);
+    this.positionAlien(boss);
+    this.showBossBanner(`${bossConfig.label} approaching!`, 2200, "warning");
+    this.setStatus(`${bossConfig.label} engaged`);
+    return true;
+  }
+
+  updateBossAbilities(deltaMs) {
+    for (const alien of this.aliens) {
+      if (!alien.isBoss || !alien.bossAbility || alien.dead) continue;
+      const ability = alien.bossAbility;
+      if (ability.fired) continue;
+      ability.elapsedMs += deltaMs;
+      if (ability.triggerFront !== undefined) {
+        if (!ability.telegraphed && alien.front <= ability.telegraphFront) {
+          ability.telegraphed = true;
+          this.showBossBanner("Boss ability incoming!", 900, "telegraph");
+        }
+        if (alien.front <= ability.triggerFront) {
+          ability.fired = true;
+          this.executeBossAbility(alien);
+        }
+        continue;
+      }
+    }
+  }
+
+  executeBossAbility(alien) {
+    this.triggerBoardBoom();
+    if (alien.bossAbility.kind === "boss5") {
+      this.executeRound5BossPattern(alien);
+      return;
+    }
+    if (alien.bossAbility.kind === "boss10") {
+      this.executeRound10BossPattern();
+    }
+  }
+
+  executeRound5BossPattern(alien) {
+    const pattern = alien.bossAbility.pattern || "front";
+    if (pattern === "walls") {
+      this.destroyPlantsOfType("wall", { ensureSurvivor: true, maxCount: 8 });
+      this.setMessage("Boss crushed every wall plant!");
+      return;
+    }
+    if (pattern === "sun") {
+      this.destroyPlantsOfType("sun", { ensureSurvivor: true, maxCount: 8 });
+      this.setMessage("Boss uprooted all sunflowers!");
+      return;
+    }
+    if (pattern === "frontWalls") {
+      this.destroyFrontColumns(alien, 2, { ensureSurvivor: true, maxCount: 8 });
+      this.destroyPlantsOfType("wall", { ensureSurvivor: true, maxCount: 8 });
+      this.setMessage("Boss smashed the front line and walls!");
+      return;
+    }
+    this.destroyFrontColumns(alien, 2, { ensureSurvivor: true, maxCount: 8 });
+    this.setMessage("Boss smashed the front line!");
+  }
+
+  executeRound10BossPattern() {
+    const bossUltimate = pickByWeight(BOSS_ROUNDS.get(10).ultimates) || "half";
+    const allPlants = Array.from(this.plants.values());
+    const targetCount = Math.floor(allPlants.length / 2);
+    const targets = this.pickRandomPlants(allPlants, targetCount);
+    this.destroyPlants(targets, { ensureSurvivor: true, maxCount: targetCount });
+    this.setMessage("Boss erased half your defenses!");
+  }
+
+  destroyFrontColumns(alien, columns, options = {}) {
+    const colFront = clamp(Math.floor(alien.front - 0.01), 0, GRID_COLS - 1);
+    const colStart = clamp(colFront - (columns - 1), 0, GRID_COLS - 1);
+    this.destroyPlantsInLaneColumns(alien.row, colStart, colFront, options);
+  }
+
+  destroyPlantsInLaneColumns(row, colStart, colEnd, options = {}) {
+    const targets = [];
+    for (let col = colStart; col <= colEnd; col += 1) {
+      const plantId = this.gridState[row][col];
+      if (!plantId) continue;
+      const plant = this.plants.get(plantId);
+      if (plant) targets.push(plant);
+    }
+    this.destroyPlants(targets, options);
+  }
+
+  destroyPlantsOfType(type, options = {}) {
+    const targets = Array.from(this.plants.values()).filter((plant) => plant.type === type);
+    this.destroyPlants(targets, options);
+  }
+
+  destroyPlants(targets, { ensureSurvivor = false, maxCount = null } = {}) {
+    if (!targets.length) return;
+    const unique = new Map();
+    targets.forEach((plant) => {
+      if (plant) unique.set(plant.id, plant);
+    });
+    let list = Array.from(unique.values());
+    if (maxCount !== null) {
+      list = this.pickRandomPlants(list, Math.min(maxCount, list.length));
+    }
+    if (ensureSurvivor) {
+      list = this.clampDestruction(list);
+    }
+    list.forEach((plant) => this.destroyPlant(plant));
+  }
+
+  clampDestruction(targets) {
+    const totalPlants = this.plants.size;
+    if (totalPlants <= 1) return [];
+    if (targets.length < totalPlants) return targets;
+    let keepPlant = Array.from(this.plants.values()).find((plant) => plant.type !== "wall");
+    if (!keepPlant) {
+      keepPlant = this.plants.values().next().value;
+    }
+    if (!keepPlant) return [];
+    return targets.filter((plant) => plant.id !== keepPlant.id);
+  }
+
+  pickRandomPlants(plants, count) {
+    const pool = [...plants];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, Math.max(0, Math.min(count, pool.length)));
+  }
+
+  clearAliens() {
+    this.aliens.forEach((alien) => alien.element?.remove());
+    this.aliens = [];
+  }
+
+  triggerBoardBoom() {
+    if (!this.boardElement) return;
+    this.boardElement.classList.remove("board--boom");
+    void this.boardElement.offsetWidth;
+    this.boardElement.classList.add("board--boom");
+    setTimeout(() => {
+      this.boardElement?.classList.remove("board--boom");
+    }, 500);
+  }
+
+  showBossBanner(text, durationMs = 2000, variant = "warning") {
+    if (!this.ui.bossBanner || !this.ui.bossBannerText) return;
+    this.ui.bossBanner.hidden = false;
+    this.ui.bossBannerText.textContent = text;
+    this.ui.bossBanner.classList.toggle("boss-banner--telegraph", variant === "telegraph");
+    this.ui.bossBanner.classList.toggle("boss-banner--warning", variant !== "telegraph");
+    this.bossBannerTimer = durationMs;
+  }
+
+  updateBossBanner(deltaMs) {
+    if (!this.ui.bossBanner || this.bossBannerTimer <= 0) return;
+    this.bossBannerTimer = Math.max(0, this.bossBannerTimer - deltaMs);
+    if (this.bossBannerTimer === 0) {
+      this.hideBossBanner();
+    }
+  }
+
+  hideBossBanner() {
+    if (!this.ui.bossBanner) return;
+    this.ui.bossBanner.hidden = true;
   }
 
   spawnMoneyDrop({ amount, x, y }) {
