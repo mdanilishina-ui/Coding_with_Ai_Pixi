@@ -6,9 +6,8 @@ export class GameStateAgent {
   setState(next) {
     const valid = {
       idle: ["running"],
-      running: ["success", "fail", "running"],
-      success: ["running", "idle"],
-      fail: ["running", "idle"],
+      running: ["result", "running"],
+      result: ["running", "idle"],
     };
 
     const allowed = valid[this.state] || [];

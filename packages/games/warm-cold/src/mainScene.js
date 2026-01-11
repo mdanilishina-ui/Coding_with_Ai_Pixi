@@ -18,6 +18,11 @@ export class MainScene {
       carrotPadding: config.carrotPadding ?? 40,
       rabbitSpeed: config.rabbitSpeed ?? 70,
       inventorySpacing: config.inventorySpacing ?? 38,
+      carrotScale: config.carrotScale ?? 1,
+      rabbitScale: config.rabbitScale ?? 1,
+      targetCarrots: config.targetCarrots ?? 3,
+      carrotPickupPadding: config.carrotPickupPadding ?? 0,
+      mistakeSpeedPenalty: config.mistakeSpeedPenalty ?? 1.1,
       isLastLevel: config.isLastLevel ?? false,
     };
 
@@ -40,10 +45,16 @@ export class MainScene {
     this.isJumping = false;
     this.jumpElapsed = 0;
     this.jumpDuration = 500;
+    this.awaitingContinue = false;
+    this.resultType = null;
     this.rabbitSpeed = this.config.rabbitSpeed;
+    this.rabbitScale = this.config.rabbitScale;
+    this.carrotScale = this.config.carrotScale;
     this.rabbitDirection = new PIXI.Point(1, 0);
     this.carrotsCollected = 0;
-    this.targetCarrots = 3;
+    this.targetCarrots = this.config.targetCarrots;
+    this.carrotPickupPadding = this.config.carrotPickupPadding;
+    this.mistakeSpeedPenalty = this.config.mistakeSpeedPenalty;
     this.carrots = [];
     this.inventoryCarrots = [];
 
@@ -63,7 +74,7 @@ export class MainScene {
     this.timer.start();
     this.spawnInitialCarrots();
     this.rabbitCaught = false;
-    this.ui.setMessage("Collect 3 carrots, then catch the rabbit");
+    this.ui.setMessage(`Collect ${this.targetCarrots} carrots, then catch the rabbit`);
     // Seed initial warmth state (cold start).
     this.warmCold.update(
       { x: this.app.screen.width / 2, y: this.app.screen.height / 2 },
@@ -85,7 +96,7 @@ export class MainScene {
   createHiddenObject() {
     const hidden = new PIXI.Sprite(getTexture("hidden_object"));
     hidden.anchor.set(0.5);
-    hidden.scale.set(0.4);
+    hidden.scale.set(0.4 * this.rabbitScale);
     this.placeHiddenObject(hidden);
     this.randomizeRabbitDirection();
     return hidden;
@@ -137,8 +148,16 @@ export class MainScene {
   }
 
   handleTap(position) {
+    if (this.gameState.state === "result") {
+      this.handleContinue();
+      return;
+    }
     if (this.gameState.state !== "running") return;
-    const tappedCarrot = this.carrots.find((c) => c && this.pointInBounds(position, c.getBounds()));
+    const tappedCarrot = this.carrots.find((c) => {
+      if (!c) return false;
+      const bounds = this.getPaddedBounds(c.getBounds(), this.carrotPickupPadding);
+      return this.pointInBounds(position, bounds);
+    });
     if (tappedCarrot) {
       this.collectCarrot(tappedCarrot);
       return;
@@ -168,7 +187,7 @@ export class MainScene {
   }
 
   onSuccess() {
-    if (!this.gameState.setState("success")) return;
+    if (!this.gameState.setState("result")) return;
     this.timer.stop();
     this.audio.stopBackground();
     this.ui.setMessage("Congratulations, ur pet is with u, full and happy", { centered: true });
@@ -178,24 +197,20 @@ export class MainScene {
     this.warmCold.setWinMode(true);
     this.audio.play("win");
     this.startJump();
-    if (this.callbacks.onLevelComplete) {
-      setTimeout(() => {
-        if (!this.config.isLastLevel) {
-          this.callbacks.onLevelComplete();
-        } else {
-          this.ui.setMessage("Win", { centered: true });
-        }
-      }, 900);
+    if (this.config.isLastLevel) {
+      this.ui.setMessage("Win", { centered: true });
     }
+    this.armContinue("success");
   }
 
   onFail() {
-    if (!this.gameState.setState("fail")) return;
+    if (!this.gameState.setState("result")) return;
     let message = "I see, u don't like animals";
     if (this.carrotsCollected >= this.targetCarrots && !this.rabbitCaught) {
       message = "Oh no, rabbit died from cold";
     }
     this.ui.setMessage(message, { centered: true });
+    this.timer.stop();
     this.audio.stopBackground();
     this.hiddenObject.texture = getTexture("hidden_object_dead");
     this.hiddenObject.tint = 0xff0000;
@@ -204,15 +219,14 @@ export class MainScene {
     this.audio.play("fail");
     this.warmCold.setLossMode(true);
     this.isJumping = false;
-    if (this.callbacks.onFailReset) {
-      setTimeout(() => this.callbacks.onFailReset(), 900);
-    }
+    this.armContinue("fail");
   }
 
   onHungerFail() {
     if (this.gameState.state !== "running") return;
-    this.gameState.setState("fail");
+    this.gameState.setState("result");
     this.ui.setMessage("Rabbit died. He doesnt eat sunlight(.", { centered: true });
+    this.timer.stop();
     this.audio.stopBackground();
     this.hiddenObject.texture = getTexture("hidden_object_dead");
     this.hiddenObject.tint = 0xff0000;
@@ -220,9 +234,7 @@ export class MainScene {
     this.audio.play("fail");
     this.warmCold.setLossMode(true);
     this.isJumping = false;
-    if (this.callbacks.onFailReset) {
-      setTimeout(() => this.callbacks.onFailReset(), 900);
-    }
+    this.armContinue("fail");
   }
 
   update(tickerTime) {
@@ -233,16 +245,18 @@ export class MainScene {
       typeof tickerTime === "number"
         ? (1000 / 60) * tickerTime
         : tickerTime?.deltaMS ?? 0;
-    this.timer.update(deltaMs);
-    const duration = this.timer.durationMs || 1;
-    const remaining = Math.max(0, this.timer.remainingMs);
-    const progress = remaining / duration;
-    this.ui.updateTimer(progress, remaining, duration);
-    this.maybeWarnTimer(progress);
-    // Continuously update warmth with the last known pointer position.
-    this.warmCold.update(this.interaction.pointerPosition, this.hiddenObject.position);
-    this.updateRabbit(deltaMs);
-    this.updateCarrotVisibility();
+    if (this.gameState.state === "running") {
+      this.timer.update(deltaMs);
+      const duration = this.timer.durationMs || 1;
+      const remaining = Math.max(0, this.timer.remainingMs);
+      const progress = remaining / duration;
+      this.ui.updateTimer(progress, remaining, duration);
+      this.maybeWarnTimer(progress);
+      // Continuously update warmth with the last known pointer position.
+      this.warmCold.update(this.interaction.pointerPosition, this.hiddenObject.position);
+      this.updateRabbit(deltaMs);
+      this.updateCarrotVisibility();
+    }
     this.updateFall(deltaMs);
     this.updateJump(deltaMs);
     this.ui.layout();
@@ -320,27 +334,55 @@ export class MainScene {
     this.hiddenObject.x += this.rabbitDirection.x * this.rabbitSpeed * dt;
     this.hiddenObject.y += this.rabbitDirection.y * this.rabbitSpeed * dt;
     // Bounce on edges.
-    const padding = 24;
-    if (this.hiddenObject.x < padding || this.hiddenObject.x > this.app.screen.width - padding) {
+    const halfWidth = this.hiddenObject.width / 2;
+    const halfHeight = this.hiddenObject.height / 2;
+    if (this.hiddenObject.x < halfWidth || this.hiddenObject.x > this.app.screen.width - halfWidth) {
       this.rabbitDirection.x *= -1;
       this.hiddenObject.x = Math.min(
-        Math.max(this.hiddenObject.x, padding),
-        this.app.screen.width - padding
+        Math.max(this.hiddenObject.x, halfWidth),
+        this.app.screen.width - halfWidth
       );
     }
-    if (this.hiddenObject.y < padding || this.hiddenObject.y > this.app.screen.height - padding) {
+    if (this.hiddenObject.y < halfHeight || this.hiddenObject.y > this.app.screen.height - halfHeight) {
       this.rabbitDirection.y *= -1;
       this.hiddenObject.y = Math.min(
-        Math.max(this.hiddenObject.y, padding),
-        this.app.screen.height - padding
+        Math.max(this.hiddenObject.y, halfHeight),
+        this.app.screen.height - halfHeight
       );
       this.baseRabbitY = this.hiddenObject.y;
     }
   }
 
   boostRabbitSpeed() {
-    this.rabbitSpeed = Math.min(this.rabbitSpeed * 1.1, 240);
+    this.rabbitSpeed = Math.min(this.rabbitSpeed * this.mistakeSpeedPenalty, 240);
     this.randomizeRabbitDirection();
+  }
+
+  getPaddedBounds(bounds, padding) {
+    if (!padding) return bounds;
+    return new PIXI.Rectangle(
+      bounds.x - padding,
+      bounds.y - padding,
+      bounds.width + padding * 2,
+      bounds.height + padding * 2
+    );
+  }
+
+  armContinue(resultType) {
+    this.awaitingContinue = true;
+    this.resultType = resultType;
+  }
+
+  handleContinue() {
+    if (!this.awaitingContinue) return;
+    this.awaitingContinue = false;
+    if (this.resultType === "success") {
+      this.callbacks.onLevelComplete?.();
+      return;
+    }
+    if (this.resultType === "fail") {
+      this.callbacks.onFailReset?.();
+    }
   }
 
   spawnInitialCarrots() {
@@ -348,7 +390,7 @@ export class MainScene {
     for (let i = 0; i < this.targetCarrots; i++) {
       const carrot = new PIXI.Sprite(getTexture("carrot"));
       carrot.anchor.set(0.5);
-      carrot.scale.set(0.6);
+      carrot.scale.set(0.6 * this.carrotScale);
       this.carrots.push(carrot);
       this.container.addChild(carrot);
       this.placeCarrot(carrot);
@@ -394,7 +436,7 @@ export class MainScene {
     const baseY = 60;
     this.inventoryCarrots.forEach((carrot, idx) => {
       carrot.position.set(baseX, baseY + idx * this.config.inventorySpacing);
-      carrot.scale.set(0.5);
+      carrot.scale.set(0.5 * this.carrotScale);
     });
   }
 
